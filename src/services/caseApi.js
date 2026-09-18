@@ -1,7 +1,9 @@
 // Client Service for Patient Cases connecting to Express/PostgreSQL backend
 import { AuthApi } from './authApi'
 
-const API_BASE = (typeof window !== 'undefined' && window.__API_URL__) || ''
+const API_BASE = import.meta.env.VITE_API_URL
+  || (typeof window !== 'undefined' && window.__API_URL__)
+  || (import.meta.env.PROD ? 'https://final-aarogya-case-backend.onrender.com' : '')
 
 async function request(endpoint, options = {}) {
   let token = AuthApi.getToken()

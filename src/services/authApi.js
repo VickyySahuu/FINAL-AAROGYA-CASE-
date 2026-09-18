@@ -1,7 +1,9 @@
 // Centralized Client Authentication Service for AAROGYA CASE
 import { savePatientProfile } from '../data/patientMockData'
 
-const API_BASE = (typeof window !== 'undefined' && window.__API_URL__) || ''
+const API_BASE = import.meta.env.VITE_API_URL
+  || (typeof window !== 'undefined' && window.__API_URL__)
+  || (import.meta.env.PROD ? 'https://final-aarogya-case-backend.onrender.com' : '')
 const TOKEN_KEY = 'aarogya_session_token'
 
 async function request(endpoint, options = {}) {

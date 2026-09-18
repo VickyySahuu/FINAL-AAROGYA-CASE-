@@ -1,6 +1,8 @@
 // Centralized Emergency & Ambulance API Client for AAROGYA CASE (Process 9)
 
-const API_BASE = (typeof window !== 'undefined' && window.__API_URL__) || ''
+const API_BASE = import.meta.env.VITE_API_URL
+  || (typeof window !== 'undefined' && window.__API_URL__)
+  || (import.meta.env.PROD ? 'https://final-aarogya-case-backend.onrender.com' : '')
 
 async function request(endpoint, options = {}) {
   const headers = {

@@ -1,7 +1,9 @@
 // Client Service for Diagnostic / Scan Requests & Reports connecting to Express/PostgreSQL backend
 import { DoctorApi } from './doctorApi'
 
-const API_BASE = (typeof window !== 'undefined' && window.__API_URL__) || ''
+const API_BASE = import.meta.env.VITE_API_URL
+  || (typeof window !== 'undefined' && window.__API_URL__)
+  || (import.meta.env.PROD ? 'https://final-aarogya-case-backend.onrender.com' : '')
 
 async function request(endpoint, options = {}, requiresDoctor = false) {
   let token = null

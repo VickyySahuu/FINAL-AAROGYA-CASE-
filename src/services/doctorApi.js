@@ -1,5 +1,8 @@
 // Centralized Doctor API Client for AAROGYA CASE Doctor Portal
-const API_BASE = '/api'
+const RAW_API_BASE = import.meta.env.VITE_API_URL
+  || (typeof window !== 'undefined' && window.__API_URL__)
+  || (import.meta.env.PROD ? 'https://final-aarogya-case-backend.onrender.com' : '')
+const API_BASE = RAW_API_BASE ? `${RAW_API_BASE.replace(/\/+$/, '')}/api` : '/api'
 
 let cachedDoctorToken = null
 
