@@ -104,6 +104,7 @@ import PatientAppointmentsPage from './pages/patient/PatientAppointmentsPage'
 import AppointmentDetailsPage from './pages/patient/AppointmentDetailsPage'
 import PatientProfilePage from './pages/patient/PatientProfilePage'
 import EditProfilePage from './pages/patient/EditProfilePage'
+import MedicalSummaryPage from './pages/patient/MedicalSummaryPage'
 
 function RootLayout() {
   return <PageTransition />
@@ -360,6 +361,16 @@ const router = createBrowserRouter([
   {
     path: '/patient/edit-profile',
     element: <EditProfilePage />,
+  },
+
+  // Medical Summary (Doctor Handoff & PDF)
+  {
+    path: '/patient/medical-summary',
+    element: <MedicalSummaryPage />,
+  },
+  {
+    path: '/patient/summary',
+    element: <MedicalSummaryPage />,
   },
 
   // Pharmacy Portal (05.01 - 05.08)

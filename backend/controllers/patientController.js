@@ -5,6 +5,7 @@ import { PrescriptionModel } from '../models/prescriptionModel.js'
 import { DiagnosticModel } from '../models/diagnosticModel.js'
 import { SessionService } from '../services/sessionService.js'
 import { TimelineService } from '../services/timelineService.js'
+import { AiSummaryService } from '../services/aiSummaryService.js'
 
 export function formatPatient(p) {
   if (!p) return null
@@ -385,5 +386,83 @@ export const PatientController = {
     } catch (err) {
       next(err)
     }
+  },
+
+  // GET /api/patients/me/medical-summary or /api/patients/:patientId/medical-summary
+  async getMedicalSummary(req, res, next) {
+    try {
+      const callerPatient = req.patient
+      const isDoctorOrStaff = req.user?.role === 'doctor' || req.user?.role === 'admin'
+
+      let targetId = req.params.patientId || 'me'
+
+      if (targetId === 'me') {
+        if (!callerPatient) {
+          return res.status(401).json({
+            success: false,
+            message: 'Patient session required for /medical-summary/me'
+          })
+        }
+        targetId = callerPatient.id
+      } else if (!isDoctorOrStaff && callerPatient) {
+        const pIdStr = String(callerPatient.id)
+        const pCodeStr = String(callerPatient.patient_id || '')
+        const pUniqueStr = String(callerPatient.patient_unique_code || '').toUpperCase()
+        if (targetId !== pIdStr && targetId !== pCodeStr && targetId.toUpperCase() !== pUniqueStr) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied: You are not authorized to view another citizen medical summary.'
+          })
+        }
+      }
+
+      // Resolve numeric patient ID
+      let resolvedId = targetId
+      if (typeof targetId === 'string' && (targetId.startsWith('AC-') || isNaN(targetId))) {
+        const found = await PatientModel.findByUniqueCode(targetId) || await PatientModel.findByPatientId(targetId)
+        if (found) {
+          resolvedId = found.id
+        }
+      }
+
+      const patient = await PatientModel.findById(resolvedId)
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          message: 'Patient record not found'
+        })
+      }
+
+      const lang = req.query.lang || 'en'
+
+      // Fetch authentic patient records in parallel
+      const [cases, appointments, prescriptions, diagnosticRequests, diagnosticReports, timeline] = await Promise.all([
+        CaseModel.getByPatientId(resolvedId).catch(() => []),
+        AppointmentModel.getByPatientId(resolvedId).catch(() => []),
+        PrescriptionModel.getByPatientId(resolvedId).catch(() => []),
+        DiagnosticModel.getRequestsByPatientId(resolvedId).catch(() => []),
+        DiagnosticModel.getReportsByPatientId(resolvedId).catch(() => []),
+        TimelineService.getPatientTimeline(resolvedId).catch(() => ({ events: [], totalEvents: 0 }))
+      ])
+
+      const summary = await AiSummaryService.generatePatientHandoffSummary({
+        patient,
+        cases,
+        appointments,
+        prescriptions,
+        diagnosticRequests,
+        diagnosticReports,
+        timeline,
+        lang
+      })
+
+      return res.json({
+        success: true,
+        summary
+      })
+    } catch (err) {
+      next(err)
+    }
   }
 }
+

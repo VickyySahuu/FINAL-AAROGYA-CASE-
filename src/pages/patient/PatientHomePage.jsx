@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import PatientLayout from '../../components/layout/PatientLayout'
 import { getPatientProfile } from '../../data/patientMockData'
 import { AuthApi } from '../../services/authApi'
+import { usePatientLanguage } from '../../context/PatientLanguageContext'
 
 export default function PatientHomePage() {
+  const { t } = usePatientLanguage()
   const [profile, setProfile] = useState(() => AuthApi.getStoredPatient() || getPatientProfile())
   const [copied, setCopied] = useState(false)
 
@@ -43,15 +45,15 @@ export default function PatientHomePage() {
             <div className="flex flex-col">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold text-[#0A2540] tracking-tight" style={{ fontFamily: 'Lexend, sans-serif' }}>
-                  Welcome, {profile.name || 'Citizen'}
+                  {t('welcome', 'Welcome')}, {profile.name || t('citizen', 'Citizen')}
                 </h1>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold">
                   <span className="material-symbols-outlined text-sm mr-1">verified</span>
-                  Verified
+                  {t('verified', 'Verified')}
                 </span>
               </div>
               <p className="text-sm text-slate-500 mt-0.5">
-                Digital Health Record Portal • Outpatient Management System
+                {t('portal_tagline', 'Digital Health Record Portal • Outpatient Management System')}
               </p>
             </div>
           </div>
@@ -60,7 +62,9 @@ export default function PatientHomePage() {
             {/* Patient ID */}
             <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl">
               <div className="flex flex-col text-left md:text-right">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400" style={{ fontFamily: 'Lexend, sans-serif' }}>Patient ID</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400" style={{ fontFamily: 'Lexend, sans-serif' }}>
+                  {t('patient_id', 'Patient ID')}
+                </span>
                 <span className="text-base sm:text-lg font-bold text-[#166534] tracking-wide font-mono">
                   {profile.patientId || '—'}
                 </span>
@@ -68,7 +72,7 @@ export default function PatientHomePage() {
               <button
                 type="button"
                 onClick={copyPatientId}
-                title="Copy Patient ID"
+                title={t('copy_id', 'Copy Patient ID')}
                 className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-[#166534] hover:border-[#166534] transition-colors shadow-xs cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">
@@ -80,7 +84,9 @@ export default function PatientHomePage() {
             {/* Permanent Patient Unique Code */}
             <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-xl">
               <div className="flex flex-col text-left md:text-right">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#166534]" style={{ fontFamily: 'Lexend, sans-serif' }}>Unique Code</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#166534]" style={{ fontFamily: 'Lexend, sans-serif' }}>
+                  {t('unique_code', 'Unique Code')}
+                </span>
                 <span className="text-base sm:text-lg font-bold text-[#0A2540] tracking-wide font-mono">
                   {profile.patientUniqueCode || '—'}
                 </span>
@@ -94,13 +100,13 @@ export default function PatientHomePage() {
           <div className="max-w-2xl flex flex-col gap-2 relative z-10">
             <div className="inline-flex items-center gap-1.5 text-[#166534] text-xs font-bold uppercase tracking-wider" style={{ fontFamily: 'Lexend, sans-serif' }}>
               <span className="material-symbols-outlined text-xl">medical_services</span>
-              <span>Primary Consultation Pathway</span>
+              <span>{t('primary_pathway', 'Primary Consultation Pathway')}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-[#0A2540] tracking-tight" style={{ fontFamily: 'Lexend, sans-serif' }}>
-              NEW PROBLEM
+              {t('new_problem', 'NEW PROBLEM')}
             </h2>
             <p className="text-base text-slate-600 leading-relaxed">
-              Describe symptoms or start a new health issue for triage and consultation. Connect directly with verified clinicians and primary care clinics.
+              {t('new_problem_desc', 'Describe symptoms or start a new health issue for triage and consultation. Connect directly with verified clinicians and primary care clinics.')}
             </p>
           </div>
 
@@ -111,23 +117,47 @@ export default function PatientHomePage() {
               style={{ fontFamily: 'Lexend, sans-serif' }}
             >
               <span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">stethoscope</span>
-              <span>START NEW PROBLEM</span>
+              <span>{t('start_new_problem', 'START NEW PROBLEM')}</span>
               <span className="material-symbols-outlined text-2xl group-hover:translate-x-1 transition-transform">arrow_forward</span>
             </Link>
           </div>
         </div>
 
-        {/* 3. Core Patient Services Grid */}
+        {/* 3. Core Patient Services Grid (Including MEDICAL SUMMARY) */}
         <div className="w-full flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-[#0A2540]" style={{ fontFamily: 'Lexend, sans-serif' }}>
-              Patient Services
+              {t('patient_services', 'Patient Services')}
             </h3>
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-400" style={{ fontFamily: 'Lexend, sans-serif' }}>Select an Option</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400" style={{ fontFamily: 'Lexend, sans-serif' }}>
+              {t('select_option', 'Select an Option')}
+            </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {/* Card 1: HISTORY */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {/* Card 1: MEDICAL SUMMARY (NEW FEATURE 1) */}
+            <Link
+              to="/patient/medical-summary"
+              id="card-service-medical-summary"
+              className="group bg-gradient-to-b from-white to-emerald-50/40 rounded-2xl p-4 sm:p-5 border-2 border-emerald-600/40 shadow-sm hover:border-[#166534] hover:shadow-md transition-all flex flex-col items-center text-center justify-between min-h-[9.5rem] sm:min-h-[12rem] btn-press"
+            >
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-100 text-[#166534] flex items-center justify-center group-hover:bg-[#166534] group-hover:text-white transition-colors duration-200 shadow-xs">
+                <span className="material-symbols-outlined text-2xl sm:text-3xl">clinical_notes</span>
+              </div>
+              <div className="flex flex-col items-center mt-2">
+                <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#166534] transition-colors" style={{ fontFamily: 'Lexend, sans-serif' }}>
+                  {t('medical_summary', 'MEDICAL SUMMARY')}
+                </span>
+                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {t('medical_summary_desc', 'Doctor Handoff PDF')}
+                </span>
+              </div>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-100 flex items-center justify-center text-[#166534] group-hover:bg-[#166534] group-hover:text-white transition-colors mt-1">
+                <span className="material-symbols-outlined text-sm sm:text-base">east</span>
+              </div>
+            </Link>
+
+            {/* Card 2: HISTORY */}
             <Link
               to="/patient/history"
               className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-[#166534]/50 hover:shadow-md transition-all flex flex-col items-center text-center justify-between min-h-[9.5rem] sm:min-h-[12rem] btn-press"
@@ -137,16 +167,18 @@ export default function PatientHomePage() {
               </div>
               <div className="flex flex-col items-center mt-2">
                 <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#166534] transition-colors" style={{ fontFamily: 'Lexend, sans-serif' }}>
-                  HISTORY
+                  {t('history', 'HISTORY')}
                 </span>
-                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">Medical Records</span>
+                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {t('history_desc', 'Medical Records')}
+                </span>
               </div>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#166534] group-hover:text-white transition-colors mt-1">
                 <span className="material-symbols-outlined text-sm sm:text-base">east</span>
               </div>
             </Link>
 
-            {/* Card 2: REPORTS */}
+            {/* Card 3: REPORTS */}
             <Link
               to="/patient/reports"
               className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-[#166534]/50 hover:shadow-md transition-all flex flex-col items-center text-center justify-between min-h-[9.5rem] sm:min-h-[12rem] btn-press"
@@ -156,16 +188,18 @@ export default function PatientHomePage() {
               </div>
               <div className="flex flex-col items-center mt-2">
                 <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#166534] transition-colors" style={{ fontFamily: 'Lexend, sans-serif' }}>
-                  REPORTS
+                  {t('reports', 'REPORTS')}
                 </span>
-                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">Lab & Scans</span>
+                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {t('reports_desc', 'Lab & Scans')}
+                </span>
               </div>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#166534] group-hover:text-white transition-colors mt-1">
                 <span className="material-symbols-outlined text-sm sm:text-base">east</span>
               </div>
             </Link>
 
-            {/* Card 3: MEDICINES */}
+            {/* Card 4: MEDICINES */}
             <Link
               to="/patient/medicines"
               className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-[#166534]/50 hover:shadow-md transition-all flex flex-col items-center text-center justify-between min-h-[9.5rem] sm:min-h-[12rem] btn-press"
@@ -175,16 +209,18 @@ export default function PatientHomePage() {
               </div>
               <div className="flex flex-col items-center mt-2">
                 <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#166534] transition-colors" style={{ fontFamily: 'Lexend, sans-serif' }}>
-                  MEDICINES
+                  {t('medicines', 'MEDICINES')}
                 </span>
-                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">Prescriptions</span>
+                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {t('medicines_desc', 'Prescriptions')}
+                </span>
               </div>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#166534] group-hover:text-white transition-colors mt-1">
                 <span className="material-symbols-outlined text-sm sm:text-base">east</span>
               </div>
             </Link>
 
-            {/* Card 4: APPOINTMENTS */}
+            {/* Card 5: APPOINTMENTS */}
             <Link
               to="/patient/appointments"
               className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-[#166534]/50 hover:shadow-md transition-all flex flex-col items-center text-center justify-between min-h-[9.5rem] sm:min-h-[12rem] btn-press"
@@ -194,28 +230,32 @@ export default function PatientHomePage() {
               </div>
               <div className="flex flex-col items-center mt-2">
                 <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#166534] transition-colors" style={{ fontFamily: 'Lexend, sans-serif' }}>
-                  APPOINTMENTS
+                  {t('appointments', 'APPOINTMENTS')}
                 </span>
-                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">OPD Visits</span>
+                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {t('appointments_desc', 'OPD Visits')}
+                </span>
               </div>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#166534] group-hover:text-white transition-colors mt-1">
                 <span className="material-symbols-outlined text-sm sm:text-base">east</span>
               </div>
             </Link>
 
-            {/* Card 5: PROFILE */}
+            {/* Card 6: PROFILE */}
             <Link
               to="/patient/profile"
-              className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-[#166534]/50 hover:shadow-md transition-all flex flex-col items-center text-center justify-between min-h-[9.5rem] sm:min-h-[12rem] col-span-2 sm:col-span-1 lg:col-span-1 btn-press"
+              className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-[#166534]/50 hover:shadow-md transition-all flex flex-col items-center text-center justify-between min-h-[9.5rem] sm:min-h-[12rem] btn-press"
             >
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center group-hover:bg-[#166534] group-hover:text-white transition-colors duration-200">
                 <span className="material-symbols-outlined text-2xl sm:text-3xl">badge</span>
               </div>
               <div className="flex flex-col items-center mt-2">
                 <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#166534] transition-colors" style={{ fontFamily: 'Lexend, sans-serif' }}>
-                  PROFILE
+                  {t('profile', 'PROFILE')}
                 </span>
-                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">ABHA Details</span>
+                <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {t('profile_desc', 'ABHA Details')}
+                </span>
               </div>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#166534] group-hover:text-white transition-colors mt-1">
                 <span className="material-symbols-outlined text-sm sm:text-base">east</span>
@@ -233,8 +273,8 @@ export default function PatientHomePage() {
               </span>
             </div>
             <div>
-              <p className="text-sm font-bold text-red-900">Need Immediate Emergency Ambulance or Hospital Care?</p>
-              <p className="text-xs text-slate-600">Access instant dispatch with GPS coordination or dial helpline 108</p>
+              <p className="text-sm font-bold text-red-900">{t('emergency_card_title', 'Need Immediate Emergency Ambulance or Hospital Care?')}</p>
+              <p className="text-xs text-slate-600">{t('emergency_card_desc', 'Access instant dispatch with GPS coordination or dial helpline 108')}</p>
             </div>
           </div>
           <Link
@@ -243,7 +283,7 @@ export default function PatientHomePage() {
             style={{ fontFamily: 'Lexend, sans-serif' }}
           >
             <span className="material-symbols-outlined text-lg">emergency_share</span>
-            <span>EMERGENCY ACCESS</span>
+            <span>{t('emergency_access', 'EMERGENCY ACCESS')}</span>
           </Link>
         </div>
       </div>

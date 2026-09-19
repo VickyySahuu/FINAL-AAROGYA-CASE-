@@ -16,12 +16,20 @@ async function request(endpoint, options = {}) {
     ...(options.headers || {})
   }
 
+  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   const currentHost = (typeof window !== 'undefined' && window.location.hostname) ? window.location.hostname : 'localhost'
-  const urls = [
-    `${API_BASE}${endpoint}`,
-    `http://${currentHost}:5000${endpoint}`,
-    `http://localhost:5000${endpoint}`
-  ]
+  const urls = isLocal
+    ? [
+        endpoint,
+        `http://${currentHost}:5000${endpoint}`,
+        `http://localhost:5000${endpoint}`,
+        ...(API_BASE ? [`${API_BASE}${endpoint}`] : [])
+      ]
+    : [
+        ...(API_BASE ? [`${API_BASE}${endpoint}`] : []),
+        endpoint,
+        `http://localhost:5000${endpoint}`
+      ]
 
   let lastError = null
 
@@ -31,6 +39,9 @@ async function request(endpoint, options = {}) {
       const data = await res.json().catch(() => null)
       if (res.ok) {
         return { ok: true, status: res.status, data }
+      } else if (res.status === 404 && urls.indexOf(url) < urls.length - 1) {
+        // Try next candidate URL in fallback list
+        continue
       } else {
         return {
           ok: false,
@@ -148,5 +159,22 @@ export const PatientApi = {
       timeline: [],
       message: res.message || 'Failed to load patient history'
     }
+  },
+
+  // GET /api/patients/me/medical-summary?lang=...
+  async getMedicalSummary(lang = 'en') {
+    const res = await request(`/api/patients/me/medical-summary?lang=${encodeURIComponent(lang || 'en')}`)
+    if (res.ok && res.data) {
+      return {
+        success: true,
+        summary: res.data.summary
+      }
+    }
+    return {
+      success: false,
+      summary: null,
+      message: res.message || 'Failed to generate medical summary'
+    }
   }
 }
+

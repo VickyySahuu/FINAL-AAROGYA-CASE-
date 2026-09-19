@@ -3,8 +3,9 @@ import UtilityBar from './UtilityBar'
 import Header from './Header'
 import Breadcrumbs from '../common/Breadcrumbs'
 import Footer from './Footer'
+import { PatientLanguageProvider, usePatientLanguage } from '../../context/PatientLanguageContext'
 
-export default function PatientLayout({
+function PatientLayoutContent({
   children,
   activeNav = 'HOME',
   breadcrumbs = null,
@@ -12,6 +13,9 @@ export default function PatientLayout({
   backLabel = 'Back',
   activeService = 'Patient Digital Portal'
 }) {
+  const { t } = usePatientLanguage()
+  const translatedBackLabel = backLabel === 'Back' ? t('back', 'Back') : (backLabel === 'Home' ? t('home', 'Home') : backLabel)
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-900 font-sans">
       {/* 1. Official Institutional Utility Bar */}
@@ -19,7 +23,7 @@ export default function PatientLayout({
         <UtilityBar activeService={activeService} />
       </div>
 
-      {/* 2. Official Header */}
+      {/* 2. Official Header with Language Switcher */}
       <div className="no-print">
         <Header portalBadge="Patient Portal" subtitle="Healthcare Digital Platform" activeNav={activeNav} />
       </div>
@@ -27,7 +31,7 @@ export default function PatientLayout({
       {/* 3. Optional Breadcrumbs */}
       {breadcrumbs && (
         <div className="no-print">
-          <Breadcrumbs items={breadcrumbs} backTo={backTo} backLabel={backLabel} />
+          <Breadcrumbs items={breadcrumbs} backTo={backTo} backLabel={translatedBackLabel} />
         </div>
       )}
 
@@ -43,3 +47,8 @@ export default function PatientLayout({
     </div>
   )
 }
+
+export default function PatientLayout(props) {
+  return <PatientLayoutContent {...props} />
+}
+

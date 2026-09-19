@@ -412,6 +412,64 @@ async function runTests() {
     assert.strictEqual(res.status, 401)
   })
 
+  // ==========================================
+  // TEST SUITE H: Patient Medical Handoff Summary & Multi-Language
+  // ==========================================
+  console.log('\n--- 8. PATIENT MEDICAL HANDOFF SUMMARY & MULTI-LANGUAGE ---')
+  await asyncTest('8.1 Patient A can access own medical handoff summary (HTTP 200)', async () => {
+    const res = await apiRequest('/api/patients/me/medical-summary?lang=en', {
+      headers: { Authorization: `Bearer ${patientAToken}` }
+    })
+    assert.strictEqual(res.status, 200)
+    assert.strictEqual(res.data.success, true)
+    assert.ok(res.data.summary)
+    assert.strictEqual(res.data.summary.patient.patientUniqueCode, patientA.patient_unique_code)
+    assert.strictEqual(res.data.summary.language, 'en')
+    assert.ok(res.data.summary.disclaimer.includes('AAROGYA CASE'))
+  })
+
+  await asyncTest('8.2 Medical handoff summary supports Hindi (lang=hi)', async () => {
+    const res = await apiRequest('/api/patients/me/medical-summary?lang=hi', {
+      headers: { Authorization: `Bearer ${patientAToken}` }
+    })
+    assert.strictEqual(res.status, 200)
+    assert.strictEqual(res.data.summary.language, 'hi')
+    assert.ok(res.data.summary.title.includes('आरोग्य केस'))
+    assert.ok(res.data.summary.disclaimer.includes('यह सारांश'))
+  })
+
+  await asyncTest('8.3 Medical handoff summary supports Hinglish (lang=hinglish)', async () => {
+    const res = await apiRequest('/api/patients/me/medical-summary?lang=hinglish', {
+      headers: { Authorization: `Bearer ${patientAToken}` }
+    })
+    assert.strictEqual(res.status, 200)
+    assert.strictEqual(res.data.summary.language, 'hinglish')
+    assert.ok(res.data.summary.subtitle.includes('Doctor Consultation aur Referral'))
+  })
+
+  await asyncTest('8.4 Patient B cannot access Patient A medical summary (HTTP 403 Forbidden)', async () => {
+    const res = await apiRequest(`/api/patients/${patientA.id}/medical-summary`, {
+      headers: { Authorization: `Bearer ${patientBToken}` }
+    })
+    assert.strictEqual(res.status, 403)
+    assert.strictEqual(res.data.success, false)
+  })
+
+  await asyncTest('8.5 Unauthenticated medical summary request returns HTTP 401', async () => {
+    const res = await apiRequest('/api/patients/me/medical-summary')
+    assert.strictEqual(res.status, 401)
+  })
+
+  await asyncTest('8.6 New patient with no records receives clean empty state (hasRecords: false)', async () => {
+    const res = await apiRequest('/api/patients/me/medical-summary', {
+      headers: { Authorization: `Bearer ${patientBToken}` }
+    })
+    assert.strictEqual(res.status, 200)
+    assert.strictEqual(res.data.success, true)
+    assert.strictEqual(res.data.summary.hasRecords, false)
+    assert.ok(res.data.summary.emptyMessage.includes('No prior clinical records documented'))
+  })
+
   // SUMMARY REPORT
   console.log('\n====================================================')
   console.log(`AI SUMMARY TEST RESULTS: ${passed} PASSED, ${failed} FAILED`)
@@ -428,3 +486,4 @@ runTests().catch(err => {
   if (server) server.close()
   process.exit(1)
 })
+

@@ -36,7 +36,19 @@ router.get('/timeline/me', requirePatientAuth, (req, res, next) => {
 })
 router.get('/:patientId/timeline', PatientController.getPatientTimeline)
 
+// Patient Medical Handoff Summary (AI Generated + Source Traceable)
+router.get('/me/medical-summary', requirePatientAuth, (req, res, next) => {
+  req.params.patientId = 'me'
+  return PatientController.getMedicalSummary(req, res, next)
+})
+router.get('/medical-summary/me', requirePatientAuth, (req, res, next) => {
+  req.params.patientId = 'me'
+  return PatientController.getMedicalSummary(req, res, next)
+})
+router.get('/:patientId/medical-summary', requirePatientAuth, PatientController.getMedicalSummary)
+
 // Lookup by ID or Unique Code
 router.get('/:id', PatientController.getById)
 
 export default router
+

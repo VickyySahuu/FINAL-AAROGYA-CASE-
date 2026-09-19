@@ -296,4 +296,480 @@ export class AiSummaryService {
 
     return summary
   }
+
+  /**
+   * Generates a patient-facing medical handoff summary for transferring care
+   * or sharing with a physician who does not use AAROGYA CASE.
+   */
+  static async generatePatientHandoffSummary({
+    patient,
+    cases = [],
+    appointments = [],
+    prescriptions = [],
+    diagnosticRequests = [],
+    diagnosticReports = [],
+    timeline = null,
+    lang = 'en'
+  }) {
+    if (!patient) {
+      throw new Error('Patient record is required to generate medical summary')
+    }
+
+    const currentLang = ['en', 'hi', 'hinglish'].includes((lang || '').toLowerCase())
+      ? lang.toLowerCase()
+      : 'en'
+
+    const LABELS = {
+      en: {
+        title: 'AAROGYA CASE — PATIENT MEDICAL SUMMARY',
+        subtitle: 'Patient-Generated Health Record Summary for Clinical Consultation Transfer',
+        disclaimer: 'This summary is generated from records available in AAROGYA CASE. It is intended to help another healthcare professional review the patient\'s documented history. It is not a diagnosis or prescription.',
+        emptyMsg: 'No prior clinical records documented in AAROGYA CASE.',
+        recentConcern: 'Current / Recent Clinical Concern',
+        medicalHistory: 'Medical History & Previous Consultations',
+        medications: 'Prescribed Medications & Treatments',
+        diagnostics: 'Diagnostic Tests & Laboratory Reports',
+        documents: 'Attached Medical Documents',
+        encounters: 'OPD Consultations & Encounters',
+        allergies: 'Documented Allergies & Chronic Conditions',
+        noAllergies: 'No allergies or chronic conditions documented in current records.',
+        noMeds: 'No prescriptions recorded in AAROGYA CASE.',
+        noDiags: 'No diagnostic investigations recorded in AAROGYA CASE.',
+        noDocs: 'No medical documents attached to patient records.',
+        noAppts: 'No appointments recorded in AAROGYA CASE.',
+        notes: 'Important Clinical Notes & Record Provenance',
+        docInAarogya: 'Documented in AAROGYA CASE',
+        patientReported: 'Patient reported during intake',
+        doctorDocumented: 'Documented by physician during consultation',
+        labConfirmed: 'Confirmed by diagnostic laboratory report',
+        pharmacyDispensed: 'Dispensed by hospital pharmacy',
+        chiefComplaint: 'Chief Complaint',
+        duration: 'Duration',
+        severity: 'Severity',
+        symptoms: 'Reported Symptoms',
+        denied: 'Explicitly Denied Symptoms',
+        narrativePrefix: 'Patient reported:'
+      },
+      hi: {
+        title: 'आरोग्य केस — मरीज मेडिकल सारांश',
+        subtitle: 'अन्य डॉक्टर के परामर्श एवं संदर्भ हेतु मरीज स्वास्थ्य रिकॉर्ड सारांश',
+        disclaimer: 'यह सारांश आरोग्य केस (AAROGYA CASE) में उपलब्ध रिकॉर्ड के आधार पर तैयार किया गया है। इसका उद्देश्य किसी अन्य स्वास्थ्य पेशेवर को मरीज के दस्तावेजी इतिहास की समीक्षा करने में सहायता करना है। यह कोई चिकित्सीय निदान (diagnosis) या दवा का नुस्खा (prescription) नहीं है।',
+        emptyMsg: 'आरोग्य केस में कोई पूर्व नैदानिक रिकॉर्ड दर्ज नहीं है।',
+        recentConcern: 'वर्तमान / हालिया स्वास्थ्य समस्या',
+        medicalHistory: 'पूर्व परामर्श एवं चिकित्सीय इतिहास',
+        medications: 'निर्धारित दवाइयां एवं उपचार (Prescriptions)',
+        diagnostics: 'जांच एवं लैब रिपोर्ट (Diagnostic Tests & Reports)',
+        documents: 'संलग्न मेडिकल दस्तावेज़ (Medical Documents)',
+        encounters: 'ओपीडी परामर्श एवं विज़िट (OPD Consultations)',
+        allergies: 'दर्ज एलर्जी एवं पुरानी बीमारियां (Allergies & Conditions)',
+        noAllergies: 'वर्तमान रिकॉर्ड में किसी एलर्जी या पुरानी बीमारी का कोई उल्लेख नहीं है।',
+        noMeds: 'आरोग्य केस में कोई प्रिस्क्रिप्शन दर्ज नहीं है।',
+        noDiags: 'आरोग्य केस में कोई जांच दर्ज नहीं है।',
+        noDocs: 'मरीज के रिकॉर्ड में कोई मेडिकल दस्तावेज़ संलग्न नहीं है।',
+        noAppts: 'आरोग्य केस में कोई अपॉइंटमेंट दर्ज नहीं है।',
+        notes: 'महत्वपूर्ण चिकित्सीय टिप्पणियां एवं रिकॉर्ड स्रोत',
+        docInAarogya: 'आरोग्य केस में दर्ज रिकॉर्ड',
+        patientReported: 'मरीज द्वारा पूछताछ के दौरान बताया गया',
+        doctorDocumented: 'परामर्श में डॉक्टर द्वारा दर्ज',
+        labConfirmed: 'लैब रिपोर्ट द्वारा पुष्ट',
+        pharmacyDispensed: 'अस्पताल फार्मेसी द्वारा वितरित',
+        chiefComplaint: 'मुख्य समस्या',
+        duration: 'अवधि',
+        severity: 'गंभीरता',
+        symptoms: 'बताए गए लक्षण',
+        denied: 'नकारे गए लक्षण',
+        narrativePrefix: 'मरीज द्वारा बताया गया:'
+      },
+      hinglish: {
+        title: 'AAROGYA CASE — PATIENT MEDICAL SUMMARY',
+        subtitle: 'Doctor Consultation aur Referral ke liye Health Record Summary',
+        disclaimer: 'Yeh summary AAROGYA CASE me available records ke aadhar par banayi gayi hai. Iska uddeshya kisi doosre doctor ko patient ki documented history samajhne me madad karna hai. Yeh koi diagnosis ya prescription nahi hai.',
+        emptyMsg: 'AAROGYA CASE me koi purana medical record recorded nahi hai.',
+        recentConcern: 'Current / Recent Health Concern',
+        medicalHistory: 'Past Consultations aur Medical History',
+        medications: 'Prescribed Medicines aur Treatment',
+        diagnostics: 'Diagnostic Tests aur Lab Reports',
+        documents: 'Attached Medical Documents',
+        encounters: 'OPD Consultations aur Visits',
+        allergies: 'Documented Allergies aur Chronic Conditions',
+        noAllergies: 'Current records me koi allergy ya chronic condition documented nahi hai.',
+        noMeds: 'AAROGYA CASE me koi prescription recorded nahi hai.',
+        noDiags: 'AAROGYA CASE me koi diagnostic test recorded nahi hai.',
+        noDocs: 'Patient records me koi medical document attached nahi hai.',
+        noAppts: 'AAROGYA CASE me koi appointment recorded nahi hai.',
+        notes: 'Important Clinical Notes aur Record Provenance',
+        docInAarogya: 'AAROGYA CASE me documented record',
+        patientReported: 'Patient ne intake ke dauran report kiya',
+        doctorDocumented: 'Consultation me doctor dwara documented',
+        labConfirmed: 'Diagnostic report dwara confirmed',
+        pharmacyDispensed: 'Hospital pharmacy dwara dispense kiya gaya',
+        chiefComplaint: 'Main Problem',
+        duration: 'Duration',
+        severity: 'Severity',
+        symptoms: 'Reported Symptoms',
+        denied: 'Explicitly Denied Symptoms',
+        narrativePrefix: 'Patient ne bataya:'
+      }
+    }
+
+    const t = LABELS[currentLang]
+
+    // 1. Patient Demographics
+    const demographics = {
+      name: patient.name || 'Citizen Patient',
+      age: patient.age || 'Not specified',
+      gender: patient.gender || 'Not specified',
+      mobile: patient.mobile || 'Not specified',
+      patientUniqueCode: patient.patient_unique_code || patient.patientUniqueCode || 'AC-UNKNOWN',
+      patientId: patient.patient_id || patient.patientId || `AC-2026-${String(patient.id).padStart(6, '0')}`,
+      bloodGroup: patient.blood_group || patient.bloodGroup || 'Not specified',
+      address: patient.address || 'Not specified',
+      identityType: patient.identity_type || patient.identityType || 'Aadhaar',
+      identityNumberMasked: patient.identity_number
+        ? `XXXX XXXX ${String(patient.identity_number).replace(/\s/g, '').slice(-4)}`
+        : 'Not provided'
+    }
+
+    // Check if patient has any authentic records
+    const totalRecordsCount = (cases?.length || 0) +
+      (appointments?.length || 0) +
+      (prescriptions?.length || 0) +
+      (diagnosticRequests?.length || 0) +
+      (diagnosticReports?.length || 0)
+    const hasRecords = totalRecordsCount > 0
+
+    // 2. Current / Most Recent Concern
+    let currentConcern = null
+    const sortedCases = Array.isArray(cases) ? [...cases].sort((a, b) => (b.id || 0) - (a.id || 0)) : []
+    const latestCase = sortedCases[0] || null
+
+    if (latestCase) {
+      const structured = latestCase.structured_history || latestCase.structuredHistory || {}
+      const rawSymptoms = Array.isArray(structured.symptoms)
+        ? structured.symptoms
+        : (Array.isArray(latestCase.symptoms) ? latestCase.symptoms : [])
+      const associated = Array.isArray(structured.associatedSymptoms) ? structured.associatedSymptoms : []
+      const negatives = Array.isArray(structured.relevantNegatives) ? structured.relevantNegatives : []
+      const verbatim = latestCase.original_patient_response || latestCase.originalPatientResponse || latestCase.problem || ''
+      const prob = latestCase.problem || structured.chiefComplaint || 'Consultation'
+      const dur = latestCase.duration || structured.duration || 'Unknown'
+      const sev = latestCase.severity || structured.severity || 'Routine'
+
+      // Formulate safe localized narrative
+      let narrative = ''
+      if (currentLang === 'hi') {
+        narrative = `${t.narrativePrefix} "${verbatim || prob}"। ${t.chiefComplaint}: ${prob}`
+        if (dur && dur !== 'Unknown') narrative += `, ${t.duration}: ${dur}`
+        if (rawSymptoms.length > 0) narrative += `। ${t.symptoms}: ${rawSymptoms.join(', ')}`
+        if (negatives.length > 0) narrative += `। ${t.denied}: ${negatives.join(', ')}`
+        narrative += '।'
+      } else if (currentLang === 'hinglish') {
+        narrative = `${t.narrativePrefix} "${verbatim || prob}". ${t.chiefComplaint}: ${prob}`
+        if (dur && dur !== 'Unknown') narrative += `, ${t.duration}: ${dur}`
+        if (rawSymptoms.length > 0) narrative += `. ${t.symptoms}: ${rawSymptoms.join(', ')}`
+        if (negatives.length > 0) narrative += `. ${t.denied}: ${negatives.join(', ')}`
+        narrative += '.'
+      } else {
+        narrative = `${t.narrativePrefix} "${verbatim || prob}". ${t.chiefComplaint}: ${prob}`
+        if (dur && dur !== 'Unknown') narrative += `, ${t.duration}: ${dur}`
+        if (rawSymptoms.length > 0) narrative += `. ${t.symptoms}: ${rawSymptoms.join(', ')}`
+        if (negatives.length > 0) narrative += `. ${t.denied}: ${negatives.join(', ')}`
+        narrative += '.'
+      }
+
+      currentConcern = {
+        caseNumber: latestCase.case_number || `CASE-${latestCase.id}`,
+        date: latestCase.created_at || latestCase.createdAt,
+        status: latestCase.status || 'Active',
+        chiefComplaint: prob,
+        verbatimStatement: verbatim || null,
+        duration: dur,
+        severity: sev,
+        symptoms: rawSymptoms,
+        associatedSymptoms: associated,
+        relevantNegatives: negatives,
+        narrative,
+        source: t.patientReported
+      }
+    }
+
+    // 3. Documented Allergies & Chronic Conditions
+    let documentedAllergies = []
+    for (const c of sortedCases) {
+      const s = c.structured_history || c.structuredHistory || {}
+      if (s.allergies && s.allergies !== 'Unknown' && s.allergies !== 'Not provided' && s.allergies !== 'None reported' && s.allergies !== 'None') {
+        if (!documentedAllergies.includes(s.allergies)) {
+          documentedAllergies.push(s.allergies)
+        }
+      }
+      if (s.pastMedicalHistory && s.pastMedicalHistory !== 'Not provided' && s.pastMedicalHistory !== 'None reported' && s.pastMedicalHistory !== 'None') {
+        if (!documentedAllergies.includes(s.pastMedicalHistory)) {
+          documentedAllergies.push(s.pastMedicalHistory)
+        }
+      }
+    }
+
+    // 4. Prescriptions & Medications
+    const formattedPrescriptions = (prescriptions || []).map(rx => {
+      const items = Array.isArray(rx.items) ? rx.items.map(it => ({
+        medicineName: it.medicine_name || it.medicineName || it.name,
+        dosage: it.dosage || 'As directed',
+        frequency: it.frequency || 'Daily',
+        instructions: it.instructions || 'Oral intake',
+        durationDays: it.duration_days || it.durationDays || null
+      })) : []
+
+      return {
+        rxNumber: rx.rx_number || `RX-${rx.id}`,
+        date: rx.created_at || rx.issue_date || rx.issued_at,
+        doctorName: rx.doctor_name || 'Dr. Ramanathan Venkatraman',
+        hospitalName: rx.hospital_name || 'District Civil Hospital',
+        diagnosis: rx.diagnosis || 'Clinical Consultation',
+        status: rx.status || 'Issued',
+        pharmacyStatus: rx.pharmacy_status || 'Sent',
+        items,
+        source: `${t.doctorDocumented} (${rx.hospital_name || 'Hospital'})`
+      }
+    })
+
+    // 5. Diagnostics & Lab Investigations
+    const formattedDiagnosticRequests = (diagnosticRequests || []).map(req => ({
+      requestId: req.request_id || `REQ-${req.id}`,
+      testName: req.test_name || req.testName || 'Diagnostic Test',
+      category: req.category || 'Laboratory',
+      status: req.status || 'Requested',
+      date: req.created_at || req.requested_at,
+      clinicalNotes: req.notes || req.clinical_notes || null,
+      source: t.doctorDocumented
+    }))
+
+    const formattedDiagnosticReports = (diagnosticReports || []).map(rep => ({
+      reportId: rep.report_id || `REP-${rep.id}`,
+      testName: rep.test_name || rep.title || 'Diagnostic Report',
+      date: rep.report_date || rep.created_at,
+      status: rep.status || 'Verified',
+      findings: rep.findings || rep.summary || 'Laboratory investigation complete',
+      results: Array.isArray(rep.test_results) ? rep.test_results : (Array.isArray(rep.results) ? rep.results : []),
+      source: `${t.labConfirmed} (Verified)`
+    }))
+
+    // 6. Attached Medical Documents
+    const documentsList = []
+    for (const c of sortedCases) {
+      const docs = Array.isArray(c.documents) ? c.documents : (c.structured_history?.documents || [])
+      for (const d of docs) {
+        documentsList.push({
+          docId: d.docId || d.id,
+          name: d.originalName || d.name || 'Medical Document',
+          type: d.mimeType || d.type || 'Clinical Document',
+          date: d.documentDate || d.date || 'On file',
+          keyObservations: d.findings?.keyObservations || d.findingsSummary || d.summary || 'Archived in case file',
+          source: `${t.docInAarogya}: ${d.originalName || 'Document'}`
+        })
+      }
+    }
+
+    // 7. Encounters & Appointments
+    const formattedAppointments = (appointments || []).map(apt => ({
+      appointmentNumber: apt.appointment_number || `APT-${apt.id}`,
+      token: apt.token || apt.queue_token || '#—',
+      doctorName: apt.doctor_name || 'Dr. Ramanathan Venkatraman',
+      department: apt.department || apt.hospital_name || 'General Medicine OPD',
+      date: apt.appointment_date || apt.date || 'Scheduled',
+      status: apt.status || 'Completed',
+      source: `${t.docInAarogya} (${apt.department || 'OPD'})`
+    }))
+
+    // 8. Historical Consultations
+    const formattedPreviousCases = sortedCases.slice(1).map(c => ({
+      caseNumber: c.case_number || `CASE-${c.id}`,
+      date: c.created_at,
+      problem: c.problem,
+      duration: c.duration || 'Not specified',
+      severity: c.severity || 'Routine',
+      status: c.status || 'Completed',
+      source: t.doctorDocumented
+    }))
+
+    // 9. Timeline Summary highlights (if available)
+    const timelineHighlights = Array.isArray(timeline?.events)
+      ? timeline.events.slice(0, 8).map(ev => ({
+          eventId: ev.eventId,
+          eventType: ev.eventType,
+          date: ev.eventDate,
+          title: ev.title,
+          source: ev.sourceType || 'Registry'
+        }))
+      : []
+
+    // 10. AI-Assisted Executive Synthesis (with safe fallback)
+    let aiExecutiveNarrative = null
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0 && hasRecords) {
+      try {
+        aiExecutiveNarrative = await this.callGeminiForHandoffNarrative({
+          patient: demographics,
+          currentConcern,
+          prescriptions: formattedPrescriptions,
+          reports: formattedDiagnosticReports,
+          allergies: documentedAllergies,
+          lang: currentLang
+        })
+      } catch (err) {
+        console.warn('[AiSummaryService] Gemini narrative fallback to deterministic:', err.message)
+      }
+    }
+
+    // If Gemini not available or failed, construct deterministic executive narrative
+    if (!aiExecutiveNarrative) {
+      if (!hasRecords) {
+        aiExecutiveNarrative = t.emptyMsg
+      } else {
+        const parts = []
+        if (currentConcern) {
+          parts.push(currentConcern.narrative)
+        }
+        if (formattedPrescriptions.length > 0) {
+          const medNames = formattedPrescriptions.flatMap(p => p.items.map(i => i.medicineName)).filter(Boolean)
+          if (medNames.length > 0) {
+            const medSnippet = medNames.slice(0, 4).join(', ')
+            if (currentLang === 'hi') {
+              parts.push(`हाल ही में निर्धारित दवाइयां: ${medSnippet} (${t.docInAarogya})।`)
+            } else if (currentLang === 'hinglish') {
+              parts.push(`Recently prescribed medicines: ${medSnippet} (${t.docInAarogya}).`)
+            } else {
+              parts.push(`Documented medications in records include: ${medSnippet} (${t.docInAarogya}).`)
+            }
+          }
+        }
+        if (formattedDiagnosticReports.length > 0) {
+          const repNames = formattedDiagnosticReports.map(r => r.testName).join(', ')
+          if (currentLang === 'hi') {
+            parts.push(`सत्यापित लैब रिपोर्ट: ${repNames} (${t.labConfirmed})।`)
+          } else if (currentLang === 'hinglish') {
+            parts.push(`Verified diagnostic reports on file: ${repNames} (${t.labConfirmed}).`)
+          } else {
+            parts.push(`Verified diagnostic reports on file include: ${repNames} (${t.labConfirmed}).`)
+          }
+        }
+        if (documentedAllergies.length > 0) {
+          if (currentLang === 'hi') {
+            parts.push(`दर्ज एलर्जी/इतिहास: ${documentedAllergies.join(', ')}।`)
+          } else if (currentLang === 'hinglish') {
+            parts.push(`Documented allergies/history: ${documentedAllergies.join(', ')}.`)
+          } else {
+            parts.push(`Documented allergies / medical history: ${documentedAllergies.join(', ')}.`)
+          }
+        } else {
+          parts.push(t.noAllergies)
+        }
+        aiExecutiveNarrative = parts.join(' ')
+      }
+    }
+
+    return {
+      summaryId: `SUM-HANDOFF-${demographics.patientUniqueCode}-${Date.now().toString().slice(-6)}`,
+      generatedAt: new Date().toISOString(),
+      language: currentLang,
+      title: t.title,
+      subtitle: t.subtitle,
+      disclaimer: t.disclaimer,
+      hasRecords,
+      emptyMessage: !hasRecords ? t.emptyMsg : null,
+      executiveNarrative: aiExecutiveNarrative,
+      labels: t,
+
+      patient: demographics,
+      currentConcern,
+      allergies: {
+        documented: documentedAllergies,
+        hasAllergies: documentedAllergies.length > 0,
+        statement: documentedAllergies.length > 0
+          ? documentedAllergies.join(', ')
+          : t.noAllergies,
+        source: documentedAllergies.length > 0 ? t.docInAarogya : 'Negative intake record'
+      },
+      prescriptions: formattedPrescriptions,
+      diagnosticRequests: formattedDiagnosticRequests,
+      diagnosticReports: formattedDiagnosticReports,
+      attachedDocuments: documentsList,
+      appointments: formattedAppointments,
+      previousCases: formattedPreviousCases,
+      timelineHighlights,
+
+      stats: {
+        totalEncounters: formattedAppointments.length,
+        totalPrescriptions: formattedPrescriptions.length,
+        totalDiagnostics: formattedDiagnosticRequests.length + formattedDiagnosticReports.length,
+        totalDocuments: documentsList.length
+      }
+    }
+  }
+
+  /**
+   * Calls Gemini for concise, source-aware executive narrative in target language
+   */
+  static async callGeminiForHandoffNarrative({ patient, currentConcern, prescriptions = [], reports = [], allergies = [], lang = 'en' }) {
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey || !apiKey.trim()) {
+      throw new Error('GEMINI_API_KEY is not configured.')
+    }
+
+    const model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite'
+    const targetLangDesc = lang === 'hi'
+      ? 'clear, formal Hindi (हिन्दी)'
+      : lang === 'hinglish'
+        ? 'conversational Roman Hindi / Hinglish'
+        : 'clear, professional clinical English'
+
+    const prompt = `You are a clinical documentation assistant for AAROGYA CASE.
+Your task is to produce a strictly factual, source-aware 2-4 sentence executive medical handoff summary for transferring a patient's care to another physician.
+
+CRITICAL CLINICAL INVARIANTS:
+1. DO NOT diagnose or declare any disease condition.
+2. DO NOT prescribe, adjust, or recommend any medication or dosage.
+3. DO NOT invent or assume any medical history, allergies, or test results.
+4. STRICT SOURCE ATTRIBUTION: Use phrases like "Patient reported...", "Documented in consultation...", "Diagnostic report states...".
+5. Language requirement: Output strictly in ${targetLangDesc}. Keep medical names and lab values accurate.
+
+PATIENT:
+Name: ${patient.name}
+Age/Gender: ${patient.age} / ${patient.gender}
+Patient Unique Code: ${patient.patientUniqueCode}
+
+CURRENT CONCERN:
+${currentConcern ? JSON.stringify(currentConcern) : 'No active complaint reported'}
+
+MEDICATIONS ON FILE:
+${prescriptions.map(p => p.items.map(i => i.medicineName).join(', ')).join('; ') || 'None documented'}
+
+DIAGNOSTIC REPORTS:
+${reports.map(r => `${r.testName}: ${r.findings}`).join('; ') || 'None documented'}
+
+ALLERGIES / CONDITIONS ON FILE:
+${allergies.join(', ') || 'No allergies documented'}
+
+Output ONLY the final summary paragraph. Do not include markdown code fences or conversational filler.`
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 350, temperature: 0.2 }
+      })
+    })
+
+    if (!res.ok) {
+      throw new Error(`Gemini API error HTTP ${res.status}`)
+    }
+
+    const data = await res.json()
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!text || !text.trim()) {
+      throw new Error('Empty response from Gemini API')
+    }
+    return text.trim()
+  }
 }
+

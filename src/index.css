@@ -243,11 +243,14 @@ button:active:not(:disabled), .btn-press:active {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 12mm !important;
-    border: 1px solid #cbd5e1 !important;
-    border-radius: 8px !important;
+    padding: 8mm 10mm !important;
+    border: none !important;
     background: #ffffff !important;
     box-shadow: none !important;
+  }
+
+  .break-inside-avoid {
+    break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
