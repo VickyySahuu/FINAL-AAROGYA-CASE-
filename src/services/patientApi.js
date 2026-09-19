@@ -1,14 +1,18 @@
 // Centralized API client for Patient module connecting to Express/PostgreSQL backend
 import { AuthApi } from './authApi'
 
-const API_BASE = import.meta.env.VITE_API_URL
+const PROD_BACKEND_URL = 'https://final-aarogya-case-backend.onrender.com'
+const API_BASE = (
+  import.meta.env.VITE_API_URL
   || (typeof window !== 'undefined' && window.__API_URL__)
-  || (import.meta.env.PROD ? 'https://final-aarogya-case-backend.onrender.com' : '')
+  || (import.meta.env.PROD ? PROD_BACKEND_URL : '')
+).replace(/\/+$/, '')
 
 async function request(endpoint, options = {}) {
-  const token = typeof window !== 'undefined'
+  const rawToken = typeof window !== 'undefined'
     ? (localStorage.getItem('aarogya_session_token') || localStorage.getItem('aarogya_patient_session_token') || sessionStorage.getItem('aarogya_patient_session_token'))
     : null
+  const token = typeof rawToken === 'string' ? rawToken.trim() : null
 
   const headers = {
     'Content-Type': 'application/json',
@@ -23,12 +27,10 @@ async function request(endpoint, options = {}) {
         endpoint,
         `http://${currentHost}:5000${endpoint}`,
         `http://localhost:5000${endpoint}`,
-        ...(API_BASE ? [`${API_BASE}${endpoint}`] : [])
+        `${API_BASE || PROD_BACKEND_URL}${endpoint}`
       ]
     : [
-        ...(API_BASE ? [`${API_BASE}${endpoint}`] : []),
-        endpoint,
-        `http://localhost:5000${endpoint}`
+        `${API_BASE || PROD_BACKEND_URL}${endpoint}`
       ]
 
   let lastError = null
@@ -39,14 +41,17 @@ async function request(endpoint, options = {}) {
       const data = await res.json().catch(() => null)
       if (res.ok) {
         return { ok: true, status: res.status, data }
-      } else if (res.status === 404 && urls.indexOf(url) < urls.length - 1) {
+      } else if (isLocal && res.status === 404 && urls.indexOf(url) < urls.length - 1) {
         // Try next candidate URL in fallback list
         continue
       } else {
+        const defaultMsg = res.status === 505
+          ? 'Healthcare server gateway encountered an HTTP protocol error (505). Please retry.'
+          : `Server responded with status ${res.status}`
         return {
           ok: false,
           status: res.status,
-          message: data?.message || `Server responded with status ${res.status}`,
+          message: data?.message || defaultMsg,
           data
         }
       }

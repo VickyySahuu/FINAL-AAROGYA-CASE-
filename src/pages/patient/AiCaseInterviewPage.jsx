@@ -275,7 +275,8 @@ export default function AiCaseInterviewPage() {
 
   // Unified send turn handler (text or voice)
   const handleSendTurn = async (textToSend, mode = 'text') => {
-    if (!textToSend || !textToSend.trim() || isSubmittingTurn || !caseItem) return
+    const targetCaseId = caseItem?.id || (typeof window !== 'undefined' ? sessionStorage.getItem('aarogya_active_case_id') : null)
+    if (!textToSend || !textToSend.trim() || isSubmittingTurn || !targetCaseId) return
     const cleanedText = textToSend.trim()
 
     stopSpeaking()
@@ -303,7 +304,7 @@ export default function AiCaseInterviewPage() {
     setVoiceTranscript('')
 
     try {
-      const res = await CaseApi.sendInterviewTurn(caseItem.id, cleanedText, updatedConversation, { inputMode: mode })
+      const res = await CaseApi.sendInterviewTurn(targetCaseId, cleanedText, updatedConversation, { inputMode: mode })
       if (res.success && res.turnResult) {
         const aiMsgIndex = updatedConversation.length
         const aiResponseText = res.turnResult.nextQuestion

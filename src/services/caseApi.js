@@ -1,13 +1,17 @@
 // Client Service for Patient Cases connecting to Express/PostgreSQL backend
 import { AuthApi } from './authApi'
 
-const API_BASE = import.meta.env.VITE_API_URL
+const PROD_BACKEND_URL = 'https://final-aarogya-case-backend.onrender.com'
+const API_BASE = (
+  import.meta.env.VITE_API_URL
   || (typeof window !== 'undefined' && window.__API_URL__)
-  || (import.meta.env.PROD ? 'https://final-aarogya-case-backend.onrender.com' : '')
+  || (import.meta.env.PROD ? PROD_BACKEND_URL : '')
+).replace(/\/+$/, '')
 
 async function request(endpoint, options = {}) {
-  const token = AuthApi.getToken()
+  const rawToken = AuthApi.getToken()
     || (typeof window !== 'undefined' ? (localStorage.getItem('aarogya_session_token') || localStorage.getItem('aarogya_patient_session_token') || sessionStorage.getItem('aarogya_patient_session_token')) : null)
+  const token = typeof rawToken === 'string' ? rawToken.trim() : null
 
   const headers = {
     'Content-Type': 'application/json',
@@ -17,17 +21,18 @@ async function request(endpoint, options = {}) {
 
   const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   const currentHost = (typeof window !== 'undefined' && window.location.hostname) ? window.location.hostname : 'localhost'
+
+  // IN PRODUCTION: MUST strictly target the production Render backend.
+  // NEVER query localhost, 127.0.0.1, or Cloudflare relative /api without a backend route.
   const urls = isLocal
     ? [
         endpoint,
         `http://${currentHost}:5000${endpoint}`,
         `http://localhost:5000${endpoint}`,
-        ...(API_BASE ? [`${API_BASE}${endpoint}`] : [])
+        `${API_BASE || PROD_BACKEND_URL}${endpoint}`
       ]
     : [
-        ...(API_BASE ? [`${API_BASE}${endpoint}`] : []),
-        endpoint,
-        `http://localhost:5000${endpoint}`
+        `${API_BASE || PROD_BACKEND_URL}${endpoint}`
       ]
 
   let lastError = null
@@ -39,13 +44,16 @@ async function request(endpoint, options = {}) {
 
       if (res.ok) {
         return { ok: true, status: res.status, data }
-      } else if ((res.status === 401 || res.status === 404 || res.status >= 500) && urls.indexOf(url) < urls.length - 1) {
+      } else if (isLocal && (res.status === 401 || res.status === 404 || res.status >= 500) && urls.indexOf(url) < urls.length - 1) {
         continue
       } else {
+        const defaultMsg = res.status === 505
+          ? 'Healthcare server gateway encountered an HTTP protocol error (505). Please retry.'
+          : `Server responded with status ${res.status}`
         return {
           ok: false,
           status: res.status,
-          message: data?.message || `Server responded with status ${res.status}`,
+          message: data?.message || defaultMsg,
           data
         }
       }
@@ -175,6 +183,13 @@ export const CaseApi = {
 
   // POST /api/patient-cases/:id/interview
   async sendInterviewTurn(caseId, message, conversationHistory = [], options = {}) {
+    if (!caseId) {
+      return {
+        success: false,
+        status: 400,
+        message: 'Active patient case ID is required to process clinical interview response'
+      }
+    }
     const inputMode = options.inputMode || 'text'
     const res = await request(`/api/patient-cases/${encodeURIComponent(caseId)}/interview`, {
       method: 'POST',
@@ -289,7 +304,8 @@ export const CaseApi = {
   getDocumentFileUrl(caseId, docId) {
     const token = AuthApi.getToken()
     const query = token ? `?token=${encodeURIComponent(token)}` : ''
-    return `${API_BASE}/api/patient-cases/${encodeURIComponent(caseId)}/documents/${encodeURIComponent(docId)}/file${query}`
+    const base = API_BASE || PROD_BACKEND_URL
+    return `${base}/api/patient-cases/${encodeURIComponent(caseId)}/documents/${encodeURIComponent(docId)}/file${query}`
   },
 
   // GET /api/patient-cases/:id/summary
