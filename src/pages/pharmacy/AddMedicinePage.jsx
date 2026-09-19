@@ -38,10 +38,7 @@ export default function AddMedicinePage() {
       qty: medQty
     })
 
-    setIsSuccess(true)
-    setTimeout(() => {
-      navigate('/pharmacy/dashboard')
-    }, 1200)
+    navigate('/pharmacy/dashboard')
   }
 
   return (

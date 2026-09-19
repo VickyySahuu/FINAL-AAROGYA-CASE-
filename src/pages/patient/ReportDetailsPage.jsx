@@ -6,7 +6,38 @@ import { getPatientProfile, DEFAULT_REPORTS } from '../../data/patientMockData'
 export default function ReportDetailsPage() {
   const location = useLocation()
   const profile = getPatientProfile()
-  const rep = location.state?.report || DEFAULT_REPORTS[0]
+  const rep = location.state?.report || null
+
+  if (!rep) {
+    return (
+      <PatientLayout
+        activeNav="PATIENT SERVICES"
+        breadcrumbs={[
+          { label: 'Patient Portal', to: '/patient/home' },
+          { label: 'Reports', to: '/patient/reports' },
+          { label: 'Report Details' }
+        ]}
+        backTo="/patient/reports"
+        backLabel="Back to Reports"
+      >
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+            <span className="material-symbols-outlined text-3xl">biotech</span>
+          </div>
+          <h2 className="text-xl font-bold text-[#0A2540]">No Diagnostic Report Selected</h2>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            Please select a diagnostic report or test result from your laboratory records.
+          </p>
+          <Link
+            to="/patient/reports"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#166534] text-white text-xs font-bold uppercase tracking-wider"
+          >
+            <span>Back to Reports</span>
+          </Link>
+        </div>
+      </PatientLayout>
+    )
+  }
 
   return (
     <PatientLayout

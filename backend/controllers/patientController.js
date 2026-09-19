@@ -176,18 +176,34 @@ export const PatientController = {
       if (token) {
         const session = SessionService.getSession(token)
         if (session) {
-          if (session.role === 'doctor') {
+          if (['doctor', 'admin', 'staff', 'diagnostic', 'pharmacy'].includes(session.role)) {
             isDoctor = true
           } else {
             callerPatient = await PatientModel.findById(session.patientDatabaseId)
-            if (!callerPatient) {
+            if (!callerPatient && session.patientUniqueCode) {
               callerPatient = await PatientModel.findByUniqueCode(session.patientUniqueCode)
+            }
+            if (!callerPatient && session.patientId) {
+              callerPatient = await PatientModel.findByPatientId(session.patientId)
             }
           }
         }
       }
 
-      if (targetId === 'me' && callerPatient) {
+      if (!callerPatient && !isDoctor) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required. Valid patient or clinical staff session required to access medical history.'
+        })
+      }
+
+      if (targetId === 'me') {
+        if (!callerPatient) {
+          return res.status(401).json({
+            success: false,
+            message: 'Patient session required for /history/me'
+          })
+        }
         targetId = callerPatient.id
       } else if (callerPatient && !isDoctor && targetId) {
         const pIdStr = String(callerPatient.id)

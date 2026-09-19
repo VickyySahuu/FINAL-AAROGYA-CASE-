@@ -43,13 +43,9 @@ export default function ReportCompletedPage() {
 
   const handleTransmit = () => {
     if (isTransmitted) return
-    setIsTransmitting(true)
-    setTimeout(() => {
-      setIsTransmitting(false)
-      setIsTransmitted(true)
-      setShowToast(true)
-      setTimeout(() => setShowToast(false), 5000)
-    }, 1200)
+    setIsTransmitted(true)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 5000)
   }
 
   if (!report) {

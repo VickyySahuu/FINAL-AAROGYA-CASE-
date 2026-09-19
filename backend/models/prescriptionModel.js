@@ -442,13 +442,11 @@ export const PrescriptionModel = {
         sql += ` ORDER BY pr.id DESC`
 
         const res = await query(sql, params)
-        if (res.rows.length > 0) {
-          const list = []
-          for (const row of res.rows) {
-            list.push(await formatPrescriptionRecord(row))
-          }
-          return list
+        const list = []
+        for (const row of res.rows) {
+          list.push(await formatPrescriptionRecord(row))
         }
+        return list
       } catch (err) {
         console.warn('[PrescriptionModel] getByPatientId failed, using memory store:', err.message)
       }

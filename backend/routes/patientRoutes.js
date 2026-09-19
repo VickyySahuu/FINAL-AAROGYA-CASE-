@@ -15,9 +15,21 @@ router.get('/prescriptions/:id', requirePatientAuth, PatientController.getPrescr
 router.get('/code/:code', PatientController.getByUniqueCode)
 
 // Lookup patient history
+router.get('/me/history', requirePatientAuth, (req, res, next) => {
+  req.params.patientId = 'me'
+  return PatientController.getPatientHistory(req, res, next)
+})
+router.get('/history/me', requirePatientAuth, (req, res, next) => {
+  req.params.patientId = 'me'
+  return PatientController.getPatientHistory(req, res, next)
+})
 router.get('/:patientId/history', PatientController.getPatientHistory)
 
 // Unified Medical Timeline (Process 16 - Chronological Clinical Timeline)
+router.get('/me/timeline', requirePatientAuth, (req, res, next) => {
+  req.params.patientId = 'me'
+  return PatientController.getPatientTimeline(req, res, next)
+})
 router.get('/timeline/me', requirePatientAuth, (req, res, next) => {
   req.params.patientId = 'me'
   return PatientController.getPatientTimeline(req, res, next)

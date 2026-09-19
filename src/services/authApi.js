@@ -71,10 +71,14 @@ export const AuthApi = {
       localStorage.removeItem('aarogya_session_data')
       localStorage.removeItem('aarogya_patient_profile')
       localStorage.removeItem('aarogya_patient_appointments')
+      localStorage.removeItem('aarogya_patient_prescriptions')
+      localStorage.removeItem('aarogya_patient_reports')
       sessionStorage.removeItem('aarogya_active_case_id')
       sessionStorage.removeItem('aarogya_active_case')
       sessionStorage.removeItem('aarogya_doctor_active_patient')
       sessionStorage.removeItem('aarogya_active_appointment_id')
+      sessionStorage.removeItem('aarogya_last_appointment_id')
+      sessionStorage.removeItem('aarogya_last_appointment_number')
     }
   },
 

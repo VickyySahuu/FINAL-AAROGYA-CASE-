@@ -48,11 +48,8 @@ export default function DeliveryVerifyPage() {
 
   const handleSimulateScan = () => {
     setApiError('')
-    setVerificationStatus('scanning')
-    setTimeout(() => {
-      setInputCode(correctUniqueCode)
-      setVerificationStatus('idle')
-    }, 600)
+    setInputCode(correctUniqueCode)
+    setVerificationStatus('idle')
   }
 
   const handleVerifyAndComplete = async (e) => {
@@ -76,19 +73,17 @@ export default function DeliveryVerifyPage() {
 
       if (res.ok) {
         setVerificationStatus('verified')
-        setTimeout(() => {
-          navigate('/pharmacy/delivery-completed', {
-            state: {
-              prescription: activeRx,
-              dispensing: res.data?.dispensing || dispensing,
-              rxNumber,
-              patientName,
-              patientId,
-              patientUniqueCode: correctUniqueCode,
-              dispensedMedicines
-            }
-          })
-        }, 800)
+        navigate('/pharmacy/delivery-completed', {
+          state: {
+            prescription: activeRx,
+            dispensing: res.data?.dispensing || dispensing,
+            rxNumber,
+            patientName,
+            patientId,
+            patientUniqueCode: correctUniqueCode,
+            dispensedMedicines
+          }
+        })
       } else {
         setVerificationStatus('failed')
         setApiError(res.message || 'Unable to verify delivery. Provided code does not match patient unique code on prescription.')

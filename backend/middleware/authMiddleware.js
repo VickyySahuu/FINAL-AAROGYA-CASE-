@@ -10,51 +10,14 @@ export async function requirePatientAuth(req, res, next) {
       ? authHeader.slice(7).trim()
       : (req.headers['x-session-token'] || req.query.token || '')
 
-    const clientUniqueCode = req.headers['x-patient-unique-code']
-    const clientPatientId = req.headers['x-patient-id']
-
-    if (!token && !clientUniqueCode && !clientPatientId) {
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'Authentication required. No session token provided.'
       })
     }
 
-    let session = token ? SessionService.getSession(token) : null
-
-    // If session was lost (e.g. server reload), auto-reconstitute for registered patient
-    if (!session && (token?.startsWith('PAT-SES-') || clientUniqueCode || clientPatientId)) {
-      let recoveredPatient = null
-      if (clientUniqueCode) {
-        recoveredPatient = await PatientModel.findByUniqueCode(clientUniqueCode)
-      }
-      if (!recoveredPatient && clientPatientId) {
-        recoveredPatient = await PatientModel.findById(clientPatientId) || await PatientModel.findByPatientId(clientPatientId)
-      }
-      if (!recoveredPatient && token && token.startsWith('PAT-SES-')) {
-        const allPatients = await PatientModel.getAll()
-        if (allPatients && allPatients.length > 0) {
-          recoveredPatient = allPatients[allPatients.length - 1]
-        }
-      }
-
-      if (recoveredPatient) {
-        const sessionToken = (token && token.startsWith('PAT-SES-')) ? token : ('PAT-SES-' + crypto.randomBytes(24).toString('hex'))
-        session = {
-          token: sessionToken,
-          userId: recoveredPatient.user_id || recoveredPatient.id,
-          patientDatabaseId: recoveredPatient.id,
-          patientId: recoveredPatient.patient_id,
-          patientUniqueCode: recoveredPatient.patient_unique_code,
-          patientName: recoveredPatient.name,
-          role: 'patient',
-          createdAt: new Date().toISOString(),
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        }
-        SessionService.setSession(session.token, session)
-      }
-    }
-
+    const session = SessionService.getSession(token)
     if (!session) {
       return res.status(401).json({
         success: false,
@@ -62,9 +25,22 @@ export async function requirePatientAuth(req, res, next) {
       })
     }
 
-    let patient = await PatientModel.findById(session.patientDatabaseId)
-    if (!patient) {
+    if (session.role && session.role !== 'patient') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized access. Patient session credentials required.'
+      })
+    }
+
+    let patient = null
+    if (session.patientDatabaseId) {
+      patient = await PatientModel.findById(session.patientDatabaseId)
+    }
+    if (!patient && session.patientUniqueCode) {
       patient = await PatientModel.findByUniqueCode(session.patientUniqueCode)
+    }
+    if (!patient && session.patientId) {
+      patient = await PatientModel.findByPatientId(session.patientId)
     }
 
     if (!patient) {

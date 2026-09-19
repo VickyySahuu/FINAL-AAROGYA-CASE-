@@ -6,13 +6,10 @@ const API_BASE = import.meta.env.VITE_API_URL
   || (import.meta.env.PROD ? 'https://final-aarogya-case-backend.onrender.com' : '')
 
 async function request(endpoint, options = {}) {
-  let token = AuthApi.getToken()
-  const patient = AuthApi.getStoredPatient()
+  const token = AuthApi.getToken()
   const headers = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(patient?.patientUniqueCode ? { 'x-patient-unique-code': patient.patientUniqueCode } : {}),
-    ...(patient?.id || patient?.patientId ? { 'x-patient-id': String(patient.id || patient.patientId) } : {}),
     ...(options.headers || {})
   }
 
@@ -27,23 +24,8 @@ async function request(endpoint, options = {}) {
 
   for (const url of urls) {
     try {
-      let res = await fetch(url, { ...options, headers })
-      let data = await res.json().catch(() => null)
-
-      // If session expired and stored patient has mobile, auto-reauthenticate and retry
-      if (res.status === 401 && patient && (patient.rawMobile || patient.mobile)) {
-        try {
-          const mob = patient.rawMobile || (patient.mobile || '').replace(/\D/g, '').slice(-10)
-          if (mob && mob.length === 10) {
-            const loginRes = await AuthApi.patientLogin({ mobile: mob })
-            if (loginRes.success && loginRes.token) {
-              headers.Authorization = `Bearer ${loginRes.token}`
-              res = await fetch(url, { ...options, headers })
-              data = await res.json().catch(() => null)
-            }
-          }
-        } catch (healErr) {}
-      }
+      const res = await fetch(url, { ...options, headers })
+      const data = await res.json().catch(() => null)
 
       if (res.ok) {
         return { ok: true, status: res.status, data }

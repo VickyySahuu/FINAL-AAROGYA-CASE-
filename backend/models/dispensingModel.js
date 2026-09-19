@@ -323,13 +323,11 @@ export const DispensingModel = {
         sql += ` ORDER BY id DESC`
 
         const res = await query(sql, params)
-        if (res.rows.length > 0) {
-          const list = []
-          for (const row of res.rows) {
-            list.push(await formatDispensingRecord(row))
-          }
-          return list
+        const list = []
+        for (const row of res.rows) {
+          list.push(await formatDispensingRecord(row))
         }
+        return list
       } catch (err) {
         console.warn('[DispensingModel] getByPatientId failed, using memory store:', err.message)
       }

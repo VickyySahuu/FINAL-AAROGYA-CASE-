@@ -15,11 +15,7 @@ export default function DiagnosticLoginPage() {
       alert('Please enter Diagnostic Center ID')
       return
     }
-    setIsProcessing(true)
-    setTimeout(() => {
-      setIsProcessing(false)
-      navigate('/diagnostic/dashboard')
-    }, 800)
+    navigate('/diagnostic/dashboard')
   }
 
   return (

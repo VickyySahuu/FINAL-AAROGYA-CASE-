@@ -19,22 +19,18 @@ export default function ConfirmAppointmentPage() {
   const timeSlot = state.timeSlot || '09:30 AM - 10:00 AM'
 
   const handleProceedToPayment = () => {
-    if (isProcessing) return
-    setIsProcessing(true)
-    setTimeout(() => {
-      navigate('/patient/payment', {
-        state: {
-          ...state,
-          hospital,
-          doctor,
-          appointmentDate,
-          dayOfWeek,
-          timeSlot,
-          patient,
-          fee: '₹0'
-        }
-      })
-    }, 400)
+    navigate('/patient/payment', {
+      state: {
+        ...state,
+        hospital,
+        doctor,
+        appointmentDate,
+        dayOfWeek,
+        timeSlot,
+        patient,
+        fee: '₹0'
+      }
+    })
   }
 
   return (

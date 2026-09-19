@@ -6,7 +6,38 @@ import { getPatientProfile, DEFAULT_CASES } from '../../data/patientMockData'
 export default function CaseDetailsPage() {
   const location = useLocation()
   const profile = getPatientProfile()
-  const caseItem = location.state?.caseItem || DEFAULT_CASES[0]
+  const caseItem = location.state?.caseItem || null
+
+  if (!caseItem) {
+    return (
+      <PatientLayout
+        activeNav="PATIENT SERVICES"
+        breadcrumbs={[
+          { label: 'Patient Portal', to: '/patient/home' },
+          { label: 'History', to: '/patient/history' },
+          { label: 'Case Details' }
+        ]}
+        backTo="/patient/history"
+        backLabel="Back to History"
+      >
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+            <span className="material-symbols-outlined text-3xl">folder_off</span>
+          </div>
+          <h2 className="text-xl font-bold text-[#0A2540]">No Case Selected</h2>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            Please select a specific clinical consultation from your medical history to review findings and details.
+          </p>
+          <Link
+            to="/patient/previous-cases"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#166534] text-white text-xs font-bold uppercase tracking-wider"
+          >
+            <span>View Previous Cases</span>
+          </Link>
+        </div>
+      </PatientLayout>
+    )
+  }
 
   return (
     <PatientLayout

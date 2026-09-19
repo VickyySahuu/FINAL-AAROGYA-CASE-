@@ -65,15 +65,12 @@ export default function UpdateAmbulanceStatusPage() {
     }
     updateAmbulanceStatus(selectedStatus)
     setIsUpdating(false)
-    setShowToast(true)
 
-    setTimeout(() => {
-      if (selectedStatus === 'Completed') {
-        navigate(request?.id ? `/ambulance/completed?id=${request.id}` : '/ambulance/completed')
-      } else {
-        navigate(request?.id ? `/ambulance/patient-location?id=${request.id}` : '/ambulance/patient-location')
-      }
-    }, 900)
+    if (selectedStatus === 'Completed') {
+      navigate(request?.id ? `/ambulance/completed?id=${request.id}` : '/ambulance/completed')
+    } else {
+      navigate(request?.id ? `/ambulance/patient-location?id=${request.id}` : '/ambulance/patient-location')
+    }
   }
 
   if (!request) {

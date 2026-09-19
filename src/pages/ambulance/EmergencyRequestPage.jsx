@@ -65,9 +65,7 @@ export default function EmergencyRequestPage() {
     updateAmbulanceStatus('Accepted')
     setIsAccepting(false)
     setIsAccepted(true)
-    setTimeout(() => {
-      navigate(request?.id ? `/ambulance/patient-location?id=${request.id}` : '/ambulance/patient-location')
-    }, 600)
+    navigate(request?.id ? `/ambulance/patient-location?id=${request.id}` : '/ambulance/patient-location')
   }
 
   if (!request) {

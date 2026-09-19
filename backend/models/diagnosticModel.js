@@ -534,9 +534,7 @@ export const DiagnosticModel = {
         sql += ` ORDER BY r.id DESC`
 
         const res = await query(sql, params)
-        if (res.rows.length > 0) {
-          return res.rows.map(r => formatReport(r))
-        }
+        return res.rows.map(r => formatReport(r))
       } catch (err) {
         console.warn('[DiagnosticModel] getReportsByPatientId PostgreSQL failed, using memory fallback:', err.message)
       }
@@ -582,9 +580,7 @@ export const DiagnosticModel = {
         sql += ` ORDER BY dr.id DESC`
 
         const res = await query(sql, params)
-        if (res.rows.length > 0) {
-          return res.rows.map(r => formatRequest(r))
-        }
+        return res.rows.map(r => formatRequest(r))
       } catch (err) {
         console.warn('[DiagnosticModel] getRequestsByPatientId PostgreSQL failed, using memory fallback:', err.message)
       }

@@ -8,7 +8,39 @@ import officialEmblem from '@stitch/aarogya_case_official_emblem.png_1/screen.pn
 export default function PrescriptionDetailsPage() {
   const location = useLocation()
   const profile = getPatientProfile()
-  const rx = location.state?.prescription || getPrescriptions()[0] || DEFAULT_PRESCRIPTIONS[0]
+  const rx = location.state?.prescription || getPrescriptions()[0] || null
+
+  if (!rx) {
+    return (
+      <PatientLayout
+        activeNav="PATIENT SERVICES"
+        breadcrumbs={[
+          { label: 'Patient Portal', to: '/patient/home' },
+          { label: 'Medicines', to: '/patient/medicines' },
+          { label: 'Prescription Details' }
+        ]}
+        backTo="/patient/medicines"
+        backLabel="Back to Medicines"
+      >
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+            <span className="material-symbols-outlined text-3xl">prescriptions</span>
+          </div>
+          <h2 className="text-xl font-bold text-[#0A2540]">No Prescription Record Found</h2>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            You do not currently have any active digital prescriptions issued by hospital doctors.
+          </p>
+          <Link
+            to="/patient/medicines"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#166534] text-white text-xs font-bold uppercase tracking-wider"
+          >
+            <span>Back to Medicines</span>
+          </Link>
+        </div>
+      </PatientLayout>
+    )
+  }
+
   const medsList = rx.medicines || rx.items || []
 
   return (

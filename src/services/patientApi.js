@@ -1,4 +1,5 @@
 // Centralized API client for Patient module connecting to Express/PostgreSQL backend
+import { AuthApi } from './authApi'
 
 const API_BASE = import.meta.env.VITE_API_URL
   || (typeof window !== 'undefined' && window.__API_URL__)
@@ -55,14 +56,29 @@ async function request(endpoint, options = {}) {
 export const PatientApi = {
   // POST /api/patients/register
   async register(patientData) {
+    // Clear any previous patient session/cache to prevent cross-account contamination
+    AuthApi.clearToken()
+
     const res = await request('/api/patients/register', {
       method: 'POST',
       body: JSON.stringify(patientData)
     })
 
     if (res.ok && res.data?.patient) {
+      if (res.data.token) {
+        AuthApi.setToken(res.data.token)
+      }
+      if (res.data.session) {
+        try {
+          localStorage.setItem('aarogya_session_data', JSON.stringify(res.data.session))
+        } catch (e) {}
+      }
+      AuthApi.setStoredPatient(res.data.patient)
+
       return {
         success: true,
+        token: res.data.token,
+        session: res.data.session,
         patient: res.data.patient,
         isExisting: res.data.isExisting || false,
         message: res.data.message

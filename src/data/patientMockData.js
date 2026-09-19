@@ -351,7 +351,7 @@ export function getPrescriptions() {
   if (saved) {
     try { return JSON.parse(saved) } catch (e) { /* fallback */ }
   }
-  return DEFAULT_PRESCRIPTIONS
+  return []
 }
 
 export function saveDoctorPrescription(newRx) {
@@ -362,7 +362,7 @@ export function saveDoctorPrescription(newRx) {
 }
 
 export function getCases() {
-  return DEFAULT_CASES
+  return []
 }
 
 export function getReports() {
@@ -370,7 +370,7 @@ export function getReports() {
   if (saved) {
     try { return JSON.parse(saved) } catch (e) {}
   }
-  return DEFAULT_REPORTS
+  return []
 }
 
 // ==========================================

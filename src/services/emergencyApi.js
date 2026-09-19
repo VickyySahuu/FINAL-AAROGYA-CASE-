@@ -85,29 +85,9 @@ export const EmergencyApi = {
    * Submit an emergency ambulance request with coordinates detected via Geolocation API
    */
   async createEmergencyRequest({ latitude, longitude, locationAccuracy, pickupLocation, landmark, destination, destinationBay }) {
-    let token = getPatientToken()
-
-    // If no active session token exists, auto-authenticate registered citizen to establish emergency telemetry session
-    if (!token) {
-      try {
-        const loginRes = await fetch('/api/auth/patient/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mobile: '9876543210' })
-        })
-        const loginData = await loginRes.json().catch(() => null)
-        if (loginData?.token) {
-          token = loginData.token
-          setPatientToken(token)
-        }
-      } catch (e) {
-        console.warn('[EmergencyApi] Auto-auth attempt notice:', e)
-      }
-    }
-
+    const token = getPatientToken()
     const headers = {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'x-patient-unique-code': 'AC-7F42K9'
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
     }
 
     return request('/api/emergency/requests', {
@@ -129,10 +109,9 @@ export const EmergencyApi = {
    * Retrieve details for a specific emergency request by ID or request number (EMG-YYYY-XXXXXX)
    */
   async getEmergencyRequest(id) {
-    let token = getPatientToken()
+    const token = getPatientToken()
     const headers = {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'x-patient-unique-code': 'AC-7F42K9'
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
     }
 
     return request(`/api/emergency/requests/${id}`, {

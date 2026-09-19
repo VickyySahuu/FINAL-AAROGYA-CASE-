@@ -33,10 +33,7 @@ export default function EditProfilePage() {
     }
 
     savePatientProfile(updated)
-    setSavedSuccess(true)
-    setTimeout(() => {
-      navigate('/patient/profile')
-    }, 1200)
+    navigate('/patient/profile')
   }
 
   return (

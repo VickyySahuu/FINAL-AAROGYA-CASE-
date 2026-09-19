@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import PatientLayout from '../../components/layout/PatientLayout'
 import { savePatientProfile, getPatientProfile } from '../../data/patientMockData'
+import { AuthApi } from '../../services/authApi'
 
 export default function PatientRegistrationPage() {
   const [fullName, setFullName] = useState('')
@@ -12,6 +13,10 @@ export default function PatientRegistrationPage() {
   const [identityNumber, setIdentityNumber] = useState('')
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
+
+  useEffect(() => {
+    AuthApi.clearToken()
+  }, [])
 
   const calculateAge = (birthDateStr) => {
     if (!birthDateStr) return ''

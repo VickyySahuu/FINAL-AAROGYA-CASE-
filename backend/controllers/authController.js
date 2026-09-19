@@ -45,12 +45,13 @@ export const AuthController = {
       // 3. Look up patient in PostgreSQL / PatientModel
       let patient = null
 
-      if (cleanMobile === '9546011026' || rawIdentifier.includes('9546011026') || rawIdentifier.toUpperCase() === 'AC-VK2604') {
-        const { DemoSeedService } = await import('../services/demoSeedService.js')
-        await DemoSeedService.ensureDemoPatient()
+      if (cleanMobile || cleanIdentity) {
+        patient = await PatientModel.findByMobileOrIdentity(cleanMobile, cleanIdentity)
       }
 
-      if (cleanMobile || cleanIdentity) {
+      if (!patient && (cleanMobile === '9546011026' || rawIdentifier.includes('9546011026') || rawIdentifier.toUpperCase() === 'AC-VK2604')) {
+        const { DemoSeedService } = await import('../services/demoSeedService.js')
+        await DemoSeedService.ensureDemoPatient()
         patient = await PatientModel.findByMobileOrIdentity(cleanMobile, cleanIdentity)
       }
 

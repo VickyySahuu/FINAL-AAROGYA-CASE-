@@ -341,9 +341,7 @@ export default function AiCaseInterviewPage() {
 
         // If interview reached complete condition, transition to review
         if (res.turnResult.isComplete) {
-          setTimeout(() => {
-            setPhase('review')
-          }, 2200)
+          setPhase('review')
         }
       } else {
         setLastFailedMessage(cleanedText)
