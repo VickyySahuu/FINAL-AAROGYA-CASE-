@@ -4,35 +4,118 @@ import PatientLayout from '../../components/layout/PatientLayout'
 import PatientQrCode from '../../components/common/PatientQrCode'
 import { AppointmentApi } from '../../services/appointmentApi'
 import { AuthApi } from '../../services/authApi'
-import { getPatientProfile, DEFAULT_APPOINTMENTS } from '../../data/patientMockData'
+import { getPatientProfile } from '../../data/patientMockData'
 import officialEmblem from '@stitch/aarogya_case_official_emblem.png_1/screen.png'
 
 export default function AppointmentConfirmedPage() {
   const location = useLocation()
   const state = location.state || {}
-  const [patient, setPatient] = useState(AuthApi.getStoredPatient() || getPatientProfile())
-  const [apt, setApt] = useState(state.appointment || DEFAULT_APPOINTMENTS[0])
+  const [patient, setPatient] = useState(() => AuthApi.getStoredPatient() || getPatientProfile())
+  const [apt, setApt] = useState(state.appointment || null)
+  const [loading, setLoading] = useState(!state.appointment)
 
   const targetId = state.appointmentId || state.appointmentNumber || (typeof window !== 'undefined' ? sessionStorage.getItem('aarogya_last_appointment_id') : null)
 
   useEffect(() => {
-    async function loadAppointment() {
-      const storedPatient = AuthApi.getStoredPatient()
-      if (storedPatient) setPatient(storedPatient)
+    const storedPatient = AuthApi.getStoredPatient()
+    if (storedPatient) setPatient(storedPatient)
 
+    if (state.appointment) {
+      setApt(state.appointment)
+      setLoading(false)
+      return
+    }
+
+    let mounted = true
+    async function loadAppointment() {
       if (targetId) {
         try {
           const res = await AppointmentApi.getAppointmentById(targetId)
-          if (res.success && res.appointment) {
+          if (mounted && res.success && res.appointment) {
             setApt(res.appointment)
+            setLoading(false)
+            return
           }
         } catch (e) {
           console.warn('Error fetching appointment by ID:', e)
         }
       }
+
+      // Try loading latest from user appointments
+      try {
+        const myRes = await AppointmentApi.getMyAppointments()
+        if (mounted && myRes.success && Array.isArray(myRes.appointments) && myRes.appointments.length > 0) {
+          setApt(myRes.appointments[0])
+          setLoading(false)
+          return
+        }
+      } catch (e) {
+        console.warn('Error fetching appointments list:', e)
+      }
+
+      if (mounted) setLoading(false)
     }
+
     loadAppointment()
-  }, [targetId])
+    return () => { mounted = false }
+  }, [targetId, state.appointment])
+
+  if (loading) {
+    return (
+      <PatientLayout
+        activeNav="HOME"
+        breadcrumbs={[
+          { label: 'Patient Portal', to: '/patient/home' },
+          { label: 'Appointment Confirmed' }
+        ]}
+        backTo="/patient/home"
+        backLabel="Home"
+      >
+        <div className="w-full max-w-3xl mx-auto px-4 py-16 text-center space-y-3">
+          <span className="material-symbols-outlined text-4xl animate-spin text-[#166534]">progress_activity</span>
+          <p className="text-sm text-slate-500 font-medium">Verifying appointment token details...</p>
+        </div>
+      </PatientLayout>
+    )
+  }
+
+  if (!apt) {
+    return (
+      <PatientLayout
+        activeNav="HOME"
+        breadcrumbs={[
+          { label: 'Patient Portal', to: '/patient/home' },
+          { label: 'Appointment Confirmed' }
+        ]}
+        backTo="/patient/home"
+        backLabel="Home"
+      >
+        <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+            <span className="material-symbols-outlined text-3xl">event_busy</span>
+          </div>
+          <h2 className="text-xl font-bold text-[#0A2540]">No Confirmed Appointment Found</h2>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            We could not find an active confirmed appointment. Please check your scheduled appointments or book a consultation.
+          </p>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <Link
+              to="/patient/appointments"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#166534] text-white text-xs font-bold uppercase tracking-wider"
+            >
+              <span>View Appointments</span>
+            </Link>
+            <Link
+              to="/patient/home"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-slate-300 text-slate-700 text-xs font-bold uppercase tracking-wider hover:bg-slate-50"
+            >
+              <span>Patient Home</span>
+            </Link>
+          </div>
+        </div>
+      </PatientLayout>
+    )
+  }
 
   return (
     <PatientLayout
@@ -74,37 +157,37 @@ export default function AppointmentConfirmedPage() {
                   Queue Consultation Token
                 </span>
                 <div className="text-3xl sm:text-4xl font-extrabold text-[#166534] font-mono tracking-tight mt-0.5">
-                  {apt.token}
+                  {apt.token || apt.tokenNumber || '—'}
                 </div>
               </div>
               <div className="text-right">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400" style={{ fontFamily: 'Lexend, sans-serif' }}>
                   Token ID
                 </span>
-                <p className="font-mono text-sm font-bold text-slate-800">{apt.id}</p>
+                <p className="font-mono text-sm font-bold text-slate-800">{apt.id || apt.appointmentNumber || '—'}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-slate-400 block font-bold">Patient Name</span>
-                <span className="font-bold text-slate-900 text-sm">{patient.name}</span>
-                <span className="text-slate-500 font-mono block">{patient.patientId || patient.patient_id}</span>
+                <span className="font-bold text-slate-900 text-sm">{patient.name || 'Citizen'}</span>
+                <span className="text-slate-500 font-mono block">{patient.patientId || patient.patient_id || '—'}</span>
               </div>
               <div>
                 <span className="text-slate-400 block font-bold">Consulting Medical Officer</span>
-                <span className="font-bold text-slate-900 text-sm">{apt.doctorName}</span>
-                <span className="text-slate-500 block">{apt.specialty}</span>
+                <span className="font-bold text-slate-900 text-sm">{apt.doctorName || apt.doctor || 'Dr. Ramanathan Venkatraman'}</span>
+                <span className="text-slate-500 block">{apt.specialty || 'General Medicine'}</span>
               </div>
               <div>
                 <span className="text-slate-400 block font-bold">Hospital & Room</span>
-                <span className="font-semibold text-slate-900">{apt.hospitalName}</span>
-                <span className="text-slate-500 block">{apt.room}</span>
+                <span className="font-semibold text-slate-900">{apt.hospitalName || apt.hospital || 'District Civil Hospital'}</span>
+                <span className="text-slate-500 block">{apt.room || 'Room 104'}</span>
               </div>
               <div>
                 <span className="text-slate-400 block font-bold">Scheduled Time</span>
-                <span className="font-bold text-[#166534] text-sm">{apt.date}</span>
-                <span className="text-slate-500 block">{apt.time}</span>
+                <span className="font-bold text-[#166534] text-sm">{apt.date || apt.appointmentDate || 'Today'}</span>
+                <span className="text-slate-500 block">{apt.time || apt.timeSlot || '09:30 AM'}</span>
               </div>
             </div>
           </div>
@@ -166,8 +249,8 @@ export default function AppointmentConfirmedPage() {
             </div>
             <div className="text-right">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Document Number</span>
-              <span className="text-base font-mono font-bold text-[#166534]">{apt.id}</span>
-              <span className="text-xs text-slate-500 block mt-0.5">Date: {apt.date}</span>
+              <span className="text-base font-mono font-bold text-[#166534]">{apt.id || apt.appointmentNumber || '—'}</span>
+              <span className="text-xs text-slate-500 block mt-0.5">Date: {apt.date || apt.appointmentDate || 'Today'}</span>
             </div>
           </div>
 
@@ -175,12 +258,12 @@ export default function AppointmentConfirmedPage() {
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6 flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold uppercase text-slate-400 block">Outpatient Queue Token</span>
-              <span className="text-4xl font-extrabold text-[#166534] font-mono tracking-tight">{apt.token}</span>
+              <span className="text-4xl font-extrabold text-[#166534] font-mono tracking-tight">{apt.token || apt.tokenNumber || '—'}</span>
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold uppercase text-slate-400 block">Assigned Slot</span>
-              <span className="text-base font-bold text-slate-900">{apt.time}</span>
-              <span className="text-xs text-slate-500 block">{apt.room} • {apt.counter || 'Counter 02'}</span>
+              <span className="text-base font-bold text-slate-900">{apt.time || apt.timeSlot || '—'}</span>
+              <span className="text-xs text-slate-500 block">{apt.room || 'Room 104'} • {apt.counter || 'Counter 02'}</span>
             </div>
           </div>
 
@@ -188,15 +271,15 @@ export default function AppointmentConfirmedPage() {
           <div className="grid grid-cols-2 gap-6 bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-xs sm:text-sm">
             <div className="space-y-1">
               <span className="text-[10px] font-bold uppercase text-slate-400 block">Patient Details</span>
-              <p className="font-bold text-slate-900 text-base">{patient.name}</p>
-              <p className="text-slate-600 font-mono">Patient ID: <strong>{patient.patientId || patient.patient_id}</strong></p>
-              <p className="text-slate-700 font-mono text-xs">Patient Unique Code: <strong className="text-[#166534]">{patient.patientUniqueCode || patient.patient_unique_code || 'AC-7F42K9'}</strong></p>
-              <p className="text-slate-500">Gender / Age: {patient.gender || 'Male'}, {patient.age || '48'} Yrs</p>
-              <p className="text-slate-500">Contact: {patient.mobile}</p>
+              <p className="font-bold text-slate-900 text-base">{patient.name || 'Citizen'}</p>
+              <p className="text-slate-600 font-mono">Patient ID: <strong>{patient.patientId || patient.patient_id || '—'}</strong></p>
+              <p className="text-slate-700 font-mono text-xs">Patient Unique Code: <strong className="text-[#166534]">{patient.patientUniqueCode || patient.patient_unique_code || '—'}</strong></p>
+              <p className="text-slate-500">Gender / Age: {patient.gender || 'Male'}, {patient.age || '—'} Yrs</p>
+              <p className="text-slate-500">Contact: {patient.mobile || '—'}</p>
             </div>
             <div className="space-y-1">
               <span className="text-[10px] font-bold uppercase text-slate-400 block">Doctor &amp; Hospital</span>
-              <p className="font-bold text-slate-900 text-base">{apt.doctorName || 'Dr. Ramanathan Venkatraman'}</p>
+              <p className="font-bold text-slate-900 text-base">{apt.doctorName || apt.doctor || 'Dr. Ramanathan Venkatraman'}</p>
               <p className="text-slate-600 font-mono">Doctor ID: <strong>{apt.doctorId || 'DOC-1042'}</strong></p>
               <p className="text-slate-500">{apt.specialty || 'General Medicine'} • {apt.room || 'Room 104'}</p>
               <p className="text-slate-500">{apt.hospitalName || 'District Civil Hospital'}</p>
@@ -209,7 +292,7 @@ export default function AppointmentConfirmedPage() {
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-xs">
             <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Chief Complaint / Visit Reason</span>
             <p className="text-slate-800 leading-relaxed font-medium">
-              {apt.chiefComplaint || 'Persistent dry cough (5 days) with mild fever and throat irritation'}
+              {apt.chiefComplaint || 'Outpatient Clinical Consultation'}
             </p>
           </div>
 
@@ -233,8 +316,8 @@ export default function AppointmentConfirmedPage() {
 
             {/* QR Code */}
             <div className="flex flex-col items-center justify-center p-2 bg-white border border-slate-300 rounded-lg shrink-0">
-              <PatientQrCode code={patient.patientUniqueCode || patient.patient_unique_code || 'AC-7F42K9'} size={68} showLabel={false} />
-              <span className="text-[8px] font-mono text-[#166534] mt-1 font-bold">{patient.patientUniqueCode || patient.patient_unique_code || 'AC-7F42K9'}</span>
+              <PatientQrCode code={patient.patientUniqueCode || patient.patient_unique_code || 'AC-000000'} size={68} showLabel={false} />
+              <span className="text-[8px] font-mono text-[#166534] mt-1 font-bold">{patient.patientUniqueCode || patient.patient_unique_code || 'AC-000000'}</span>
             </div>
 
             <div className="text-right">
