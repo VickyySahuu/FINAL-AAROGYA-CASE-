@@ -526,9 +526,15 @@ export default function AiCaseInterviewPage() {
       setIsResetting(true)
       stopSpeaking()
       setErrorMsg('')
-      const res = await CaseApi.resetInterview(caseItem?.id)
+      const targetCaseId = caseItem?.id 
+        || (typeof window !== 'undefined' ? sessionStorage.getItem('aarogya_active_case_id') : null)
+      const res = await CaseApi.resetInterview(targetCaseId)
       if (res.success && res.case) {
         setCaseItem(res.case)
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('aarogya_active_case_id', String(res.case.id))
+          sessionStorage.removeItem('aarogya_active_case')
+        }
         const initialText = res.initialQuestion || 'Hello. I am the Aarogya Case intake assistant. Please describe your health concern or main symptoms in your own words.'
         setConversation([
           { sender: 'ai', text: initialText, languageStyle: 'english', timestamp: new Date().toISOString() }
@@ -541,6 +547,12 @@ export default function AiCaseInterviewPage() {
         setDocUploadProgress(null)
         setPreviewDoc(null)
         setIsEditingReview(false)
+        setEditableFields({
+          duration: '',
+          pastMedicalHistory: '',
+          currentMedications: '',
+          allergies: ''
+        })
         setPhase('interview')
         setShowResetConfirm(false)
       } else {

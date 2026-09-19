@@ -7,18 +7,28 @@ const API_BASE = import.meta.env.VITE_API_URL
 
 async function request(endpoint, options = {}) {
   const token = AuthApi.getToken()
+    || (typeof window !== 'undefined' ? (localStorage.getItem('aarogya_session_token') || localStorage.getItem('aarogya_patient_session_token') || sessionStorage.getItem('aarogya_patient_session_token')) : null)
+
   const headers = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {})
   }
 
+  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   const currentHost = (typeof window !== 'undefined' && window.location.hostname) ? window.location.hostname : 'localhost'
-  const urls = [
-    `${API_BASE}${endpoint}`,
-    `http://${currentHost}:5000${endpoint}`,
-    `http://localhost:5000${endpoint}`
-  ]
+  const urls = isLocal
+    ? [
+        endpoint,
+        `http://${currentHost}:5000${endpoint}`,
+        `http://localhost:5000${endpoint}`,
+        ...(API_BASE ? [`${API_BASE}${endpoint}`] : [])
+      ]
+    : [
+        ...(API_BASE ? [`${API_BASE}${endpoint}`] : []),
+        endpoint,
+        `http://localhost:5000${endpoint}`
+      ]
 
   let lastError = null
 
@@ -29,6 +39,8 @@ async function request(endpoint, options = {}) {
 
       if (res.ok) {
         return { ok: true, status: res.status, data }
+      } else if ((res.status === 401 || res.status === 404 || res.status >= 500) && urls.indexOf(url) < urls.length - 1) {
+        continue
       } else {
         return {
           ok: false,

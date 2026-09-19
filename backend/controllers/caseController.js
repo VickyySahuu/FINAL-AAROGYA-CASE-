@@ -352,13 +352,26 @@ export const CaseController = {
         const allCases = await CaseModel.getByPatientId(patientId)
         caseItem = allCases.find(
           c => (c.status === 'Active' && c.lifecycle_stage !== 'COMPLETED')
-        )
+        ) || allCases.find(c => c.status === 'Active') || allCases[0]
       }
 
       if (!caseItem) {
-        return res.status(404).json({
-          success: false,
-          message: 'Active patient case not found to reset'
+        const patientUniqueCode = req.patient.patient_unique_code || req.patient.patientUniqueCode
+        const caseNumber = `CASE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+        caseItem = await CaseModel.create({
+          caseNumber,
+          patientId,
+          patientUniqueCode,
+          problem: 'Pending clinical intake interview',
+          duration: null,
+          severity: 'Routine',
+          symptoms: [],
+          assessmentAnswers: [],
+          aiAssessment: {},
+          originalPatientResponse: null,
+          structuredHistory: null,
+          lifecycleStage: 'IN PROGRESS',
+          status: 'Active'
         })
       }
 

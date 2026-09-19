@@ -227,9 +227,6 @@ export const CaseModel = {
       original_patient_response: 'original_patient_response',
       structuredHistory: 'structured_history',
       structured_history: 'structured_history',
-      documents: 'documents',
-      uploadedDocuments: 'documents',
-      uploaded_documents: 'documents',
       lifecycleStage: 'lifecycle_stage',
       lifecycle_stage: 'lifecycle_stage',
       status: 'status'
