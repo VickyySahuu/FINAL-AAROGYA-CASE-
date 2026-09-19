@@ -25,7 +25,8 @@ import { PrescriptionModel } from './models/prescriptionModel.js'
 import { DiagnosticModel } from './models/diagnosticModel.js'
 import { TimelineService } from './services/timelineService.js'
 import { DemoSeedService } from './services/demoSeedService.js'
-import { saveFallbackState, loadFallbackState, memoryPatients } from './db/fallbackStore.js'
+import { saveFallbackState, loadFallbackState, memoryPatients, memoryCases, memoryAppointments, memoryPrescriptions, memoryRequests } from './db/fallbackStore.js'
+import { query } from './db/index.js'
 
 let server
 let baseUrl
@@ -233,6 +234,7 @@ async function runTests() {
   // E. NEW CONSULTATION BECOMES PART OF HISTORY
   // -------------------------------------------------------------
   let newRxVisit1 = null
+  let newDiagReqVisit1 = null
 
   await asyncTest('E.1 Doctor issues prescription and diagnostic for current encounter', async () => {
     // Create prescription
@@ -285,6 +287,7 @@ async function runTests() {
       }
     })
     assert.strictEqual(diagRes.status, 201)
+    newDiagReqVisit1 = diagRes.data.request || diagRes.data.diagnosticRequest || diagRes.data
   })
 
   await asyncTest('E.2 Complete consultation in doctor workflow', async () => {
@@ -556,6 +559,56 @@ async function runTests() {
     assert.ok(previousRxs.length >= 2, 'Doctor must see at least 2 previous prescriptions')
     assert.ok(previousRxs.some(r => String(r.id) === String(newRxVisit1.id)), 'Visit 1 prescription must be visible in previous prescriptions')
     assert.ok(previousRxs.some(r => String(r.id) === String(historicalRx.id)), 'Historical prescription must be visible in previous prescriptions')
+  })
+
+  // -------------------------------------------------------------
+  // L. CLEANUP TRANSIENT TEST DATA (PRESERVE COMPACT DEMO HISTORY)
+  // -------------------------------------------------------------
+  await asyncTest('L.1 Clean up transient test visits to preserve compact demo timeline', async () => {
+    try {
+      if (apptVisit2?.id) await query('DELETE FROM appointments WHERE id = $1', [apptVisit2.id]).catch(() => {})
+      if (newApptVisit1?.id) await query('DELETE FROM appointments WHERE id = $1', [newApptVisit1.id]).catch(() => {})
+      if (newRxVisit1?.id) {
+        await query('DELETE FROM prescription_items WHERE prescription_id = $1', [newRxVisit1.id]).catch(() => {})
+        await query('DELETE FROM prescriptions WHERE id = $1', [newRxVisit1.id]).catch(() => {})
+      }
+      if (newDiagReqVisit1?.id) await query('DELETE FROM diagnostic_requests WHERE id = $1', [newDiagReqVisit1.id]).catch(() => {})
+      if (caseVisit2?.id) await query('DELETE FROM patient_cases WHERE id = $1', [caseVisit2.id]).catch(() => {})
+      if (newCaseVisit1?.id) await query('DELETE FROM patient_cases WHERE id = $1', [newCaseVisit1.id]).catch(() => {})
+      if (patientOther?.id) await query('DELETE FROM patients WHERE id = $1', [patientOther.id]).catch(() => {})
+
+      // Also clean in-memory fallback arrays if active
+      if (memoryAppointments) {
+        const delApptIds = new Set([apptVisit2?.id, newApptVisit1?.id].filter(Boolean))
+        for (let i = memoryAppointments.length - 1; i >= 0; i--) {
+          if (delApptIds.has(memoryAppointments[i].id)) memoryAppointments.splice(i, 1)
+        }
+      }
+      if (memoryCases) {
+        const delCaseIds = new Set([caseVisit2?.id, newCaseVisit1?.id].filter(Boolean))
+        for (let i = memoryCases.length - 1; i >= 0; i--) {
+          if (delCaseIds.has(memoryCases[i].id)) memoryCases.splice(i, 1)
+        }
+      }
+      if (memoryPrescriptions && newRxVisit1?.id) {
+        for (let i = memoryPrescriptions.length - 1; i >= 0; i--) {
+          if (memoryPrescriptions[i].id === newRxVisit1.id) memoryPrescriptions.splice(i, 1)
+        }
+      }
+      if (memoryRequests && newDiagReqVisit1?.id) {
+        for (let i = memoryRequests.length - 1; i >= 0; i--) {
+          if (memoryRequests[i].id === newDiagReqVisit1.id) memoryRequests.splice(i, 1)
+        }
+      }
+      if (memoryPatients && patientOther?.id) {
+        for (let i = memoryPatients.length - 1; i >= 0; i--) {
+          if (memoryPatients[i].id === patientOther.id) memoryPatients.splice(i, 1)
+        }
+      }
+      saveFallbackState()
+    } catch (e) {
+      console.warn('Test cleanup notice:', e.message)
+    }
   })
 
   console.log('===============================================================')
